@@ -8,7 +8,7 @@ from denoiser_utils import preprocessing
 from tqdm import tqdm
 
 
-def single_audio_inference(G: NNGraph, stft_frame_i_T, stats_collector: ActivationRangesCollector = None, quant_exec=False):
+def single_audio_inference(G: NNGraph, stft_frame_i_T, stats_collector: ActivationRangesCollector = None, quant_exec=False, disable_tqdm=False):
     stft_frame_o_T = np.empty_like(stft_frame_i_T)
     rnn_nodes = [node for node in G.nodes(node_classes=RNNNodeBase, sort=True)]
     rnn_states = []
@@ -21,7 +21,7 @@ def single_audio_inference(G: NNGraph, stft_frame_i_T, stats_collector: Activati
 
     #init lstm to zeros
     stft_mask = np.zeros(257)
-    for i in tqdm(range(len_seq)):
+    for i in tqdm(range(len_seq), disable=disable_tqdm):
         stft_clip = stft_frame_i_T[i]
         stft_clip_mag = np.abs(stft_clip)
 

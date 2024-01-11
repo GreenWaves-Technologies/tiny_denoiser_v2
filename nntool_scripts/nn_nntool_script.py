@@ -2,6 +2,7 @@ import argparse
 import os
 import pickle
 from glob import glob
+from tqdm import tqdm
 
 import argcomplete
 import matplotlib.pyplot as plt
@@ -34,7 +35,7 @@ def create_parser():
     parser.add_argument('--mode', default="generate_at_model", choices=["test_sample", "test_dataset", "performance", "generate_at_model"],
                         help="Script mode")
     # Model options
-    parser.add_argument('--trained_model', default="model/denoiser.onnx",
+    parser.add_argument('--trained_model', required=True,
                         help="Path to the trained tflite/onnx")
     parser.add_argument('--quant_dataset', default="dataset/quant/*",
                         help="path to .wav files to use to quantize the network")
@@ -58,6 +59,8 @@ def create_parser():
                         help="path to folder of noisy samples")
     parser.add_argument('--clean_dataset', default=None,
                         help="path to folder of clean samples")
+    parser.add_argument('--output_dataset', default=None,
+                        help="path to folder of output samples")
     parser.add_argument('--dns_dataset', action="store_true",
                         help="slect correct names for dns dataset")
     parser.add_argument('--verbose', action="store_true",
@@ -71,6 +74,7 @@ def create_parser():
     return parser
 
 def build_nntool_graph(trained_model, quant_type, quant_dataset=None, stats_file=None, requantize=False) -> NNGraph:
+    print(f"Building model with {quant_type} Quantization options")
 
     G = NNGraph.load_graph(trained_model, old_dsp_lib=False)
     G.name = "tinydenoiser"
@@ -140,6 +144,9 @@ if __name__ == '__main__':
     parser = create_parser()
     argcomplete.autocomplete(parser)
     args = parser.parse_args()
+    if args.mode == "test_dataset":
+        if not args.clean_dataset or not args.noisy_dataset:
+            raise ValueError("In test_dataset mode you need to provide clean_dataset and noisy_dataset")
 
     G = build_nntool_graph(
         args.trained_model,
@@ -168,13 +175,14 @@ if __name__ == '__main__':
     elif args.mode == "test_dataset":
         print(f"Testing on dataset: {args.noisy_dataset}")
         files = os.listdir(args.noisy_dataset)
-        metric = []
-        for c, filename in enumerate(files):
+        pesq = 0
+        stoi = 0
+        for c, filename in enumerate(tqdm(files)):
             noisy_file = os.path.join(args.noisy_dataset, filename)
             stft = preprocessing(noisy_file)
 
             stft_frame_i_T = np.transpose(stft) # swap the axis to select the tmestamp
-            stft_frame_o_T = single_audio_inference(G, stft_frame_i_T, quant_exec=not args.float_exec_test, stats_collector=None)
+            stft_frame_o_T = single_audio_inference(G, stft_frame_i_T, quant_exec=not args.float_exec_test, stats_collector=None, disable_tqdm=True)
 
             estimate = postprocessing(stft_frame_o_T.T)
 
@@ -188,12 +196,19 @@ if __name__ == '__main__':
             clean_data = open_wav(clean_file)
             pesq_i, stoi_i = calculate_pesq_stoi(estimate, clean_data, args.verbose)
 
-            metric.append([filename, pesq_i, stoi_i])
+            pesq += pesq_i
+            stoi += stoi_i
+            if ((c+1) % 10) == 0:
+                print(f"After {c+1} files: PESQ={pesq/(c+1):.4f} STOI={stoi/(c+1):.4f}")
 
             if args.output_dataset:
                 output_file = os.path.join(args.output_dataset, filename)
                 # Write out audio as 24bit PCM WAV
                 sf.write(output_file, estimate, 16000)
+
+        print(f"Result of accuracy on the ({len(files)} samples):")
+        print(f"PESQ: {pesq / len(files)}")
+        print(f"STOI: {stoi / len(files)}")
 
     else:
         model_build_dir = os.path.split(args.at_model_path)[0]
