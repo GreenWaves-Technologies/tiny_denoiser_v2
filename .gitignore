@@ -1,0 +1,5 @@
+test_run
+*.pdf
+build
+.vscode
+__pycache__
