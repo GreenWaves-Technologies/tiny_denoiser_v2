@@ -91,8 +91,13 @@ void RunDenoiser(DenoiserArg_T *Arg)
      **********/
     start = gap_cl_readhwtimer();
     for (int i = 0; i< STFT_SIZE; i++ ){
+        #if 0
+        StftOut[2*i]    = (STFT_TYPE) (StftOut[2*i]   * OutputNN[i]);
+        StftOut[2*i+1]  = (STFT_TYPE) (StftOut[2*i+1] * OutputNN[i]);
+        #else
         StftOut[2*i]    = (STFT_TYPE) ( ((float) StftOut[2*i]  ) * ((((float) OutputNN[i]) * alpha ) + (1-alpha)) );
         StftOut[2*i+1]  = (STFT_TYPE) ( ((float) StftOut[2*i+1]) * ((((float) OutputNN[i]) * alpha ) + (1-alpha)) );
+        #endif
     }
     PerfCounter[3] += gap_cl_readhwtimer() - start;
 

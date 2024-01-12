@@ -65,12 +65,12 @@ Configure:
 Connects:
 
     Connect(PdmIn, Resampler48To16kHz);
-    Connect(Resampler48To16kHz, Lim1);
-    Connect(Lim1, Norm);
-    Connect(Norm, MemOut);
+    Connect(Resampler48To16kHz, MemOut);
 
     Connect(MemIn, Resampler16To48kHz);
-    Connect(Resampler16To48kHz, split);
+    Connect(Resampler16To48kHz, Lim1);
+    Connect(Lim1, Norm);
+    Connect(Norm, split);
     Connect(split.0, PdmOut1);
     Connect(split.1, PdmOut2);
 

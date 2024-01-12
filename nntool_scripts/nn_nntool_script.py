@@ -7,7 +7,6 @@ from tqdm import tqdm
 import argcomplete
 import matplotlib.pyplot as plt
 import numpy as np
-import scipy.io.wavfile as wave
 import soundfile as sf
 from denoiser_nntool_utils import get_astats, single_audio_inference
 from denoiser_utils import open_wav, pesq_stoi, postprocessing, preprocessing

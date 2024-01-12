@@ -9,7 +9,7 @@
 #include "tinydenoiserKernels.h"
 #include "tinydenoiserModelInfos.h"
 
-#define STFT_SIZE      (N_FFT / 2 + 1)
+#define STFT_SIZE      257
 #define NN_IN_SIZE     257
 #define RNN_STATE_SIZE 256
 

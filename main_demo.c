@@ -20,6 +20,9 @@
 #include "SFUGraph_L2_Descr.h"
 #include "sfu_pmsis_runtime.h"
 
+#define Q_BIT_IN 29
+#define Q_BIT_OUT 27
+
 #define SAI_SCK(itf)         (48+(itf*4)+0)
 #define SAI_WS(itf)          (48+(itf*4)+1)
 #define SAI_SDI(itf)         (48+(itf*4)+2)
@@ -48,7 +51,7 @@ AT_DEFAULTFLASH_EXT_ADDR_TYPE fft_inverse_L3_Flash = 0;
 AT_DEFAULTFLASH_EXT_ADDR_TYPE tinydenoiser_L3_Flash = 0;
 AT_DEFAULTFLASH_EXT_ADDR_TYPE tinydenoiser_L3_PrivilegedFlash = 0;
 
-L2_MEM int ReconstructedFrameTmp[FRAME_SIZE];
+L2_MEM STFT_TYPE ReconstructedFrameTmp[FRAME_SIZE];
 
 extern float alpha;
 
@@ -273,8 +276,6 @@ static void handle_mem_out_end(void * arg)
         &sfu_pdmin_buff[sfu_pdmin_buff_idx]);
 
     sfu_pdmin_buff_idx ^= 1;
-
-    pi_evt_push(&proc_task_pdmin);
 }
 
 static void handle_input_transfer_end(void *arg)
@@ -297,7 +298,7 @@ static void handle_input_transfer_end(void *arg)
  */
 static pi_err_t open_sfu()
 {
-    pi_sfu_conf_t sfu_conf = { .sfu_frequency=0 };
+    pi_sfu_conf_t sfu_conf = { .sfu_frequency=SOC_FREQ };
 
     if(PI_OK != pi_sfu_open(&sfu_conf)) {
         printf("Failed to open SFU\n");
@@ -328,7 +329,7 @@ static pi_err_t open_sfu()
             printf("error allocating buffer out\n");
             return PI_FAIL;
         }
-        for (int i=0; i<FRAME_STEP; i++) ((int *) data)[i] = 0;
+        for (int p=0; p<FRAME_STEP; p++) ((int *) data)[p] = 0;
         pi_sfu_buffer_init(&sfu_pdmin_buff[i], data, FRAME_STEP, sizeof(int));
 
         sfu_pdmin_buff[i].task = &sfu_mem_out_task;
@@ -349,7 +350,7 @@ static pi_err_t open_sfu()
             printf("error allocating buffer in\n");
             return PI_FAIL;
         }
-        for (int i=0; i<FRAME_STEP; i++) ((int *) data)[i] = 0;
+        for (int p=0; p<FRAME_STEP; p++) ((int *) data)[p] = 0;
         pi_sfu_buffer_init(&sfu_pdmout_buff[i], data, FRAME_STEP, sizeof(int));
 
         sfu_pdmout_buff[i].task = &sfu_mem_in_task;
@@ -616,7 +617,6 @@ int main(void)
     gap_fc_starttimer();
     gap_fc_resethwtimer();
 
-    pi_evt_sig_init(&proc_task_pdmin);
     pi_evt_sig_init(&proc_task_pdmout );
     printf("Start running\n");
 
@@ -624,8 +624,8 @@ int main(void)
 
     int counter = 0, gpio_val = 0;
     while(1) {
-        /* Wait Events for MEMOUT before reading the buffers and process them */
-        pi_evt_wait(&proc_task_pdmin);
+        /* Wait Events for MEMIN before filling the buffers */
+        pi_evt_wait(&proc_task_pdmout);
 
         /* Data arrived, wake up the cluster and set high the frequency of the SoC so that you have a better L2->L1 BW */
         pi_fll_ioctl(PI_FREQ_DOMAIN_FC, PI_FLL_IOCTL_DIV_SET, (void *) 1);
@@ -634,17 +634,21 @@ int main(void)
 
         pi_ads1014_read_value(ads1014,&fpot);
         alpha = ((fpot - 1470) / 577);
-        printf("%f\n", alpha);
-        /* Register which buff out (MemIn) you are before running any computation */
-        int * BuffOut0 = (int *) (sfu_pdmout_buff[sfu_pdmout_buff_idx ^ 1].data);
+
+        //First Copy previous loop processed frame to output
+        for(int i=0;i<FRAME_STEP;i++) {
+            ((int32_t*)sfu_pdmout_buff[sfu_pdmout_buff_idx ^ 1].data)[i]= (int32_t)((float)(ReconstructedFrameTmp[i])*((int)(1<<Q_BIT_OUT)));
+        }
 
         /* Rotate buffer */
         for (int i=0; i<(FRAME_SIZE - FRAME_STEP); i++) {
             InFrame[i] = InFrame[i + FRAME_STEP];
+            ReconstructedFrameTmp[i] = ReconstructedFrameTmp[i+FRAME_STEP];
         }
         /* Read buffer in (MemOut) */
         for (int i=0; i<FRAME_STEP; i++) {
-            InFrame[i + (FRAME_SIZE - FRAME_STEP)] = ((STFT_TYPE) ((int *) sfu_pdmin_buff[sfu_pdmin_buff_idx ^ 1].data)[i] / (1<<15));
+            InFrame[i + (FRAME_SIZE - FRAME_STEP)] = (((STFT_TYPE) ((int32_t *) sfu_pdmin_buff[sfu_pdmin_buff_idx ^ 1].data)[i]) / (1<<Q_BIT_IN));
+            ReconstructedFrameTmp[i + (FRAME_SIZE - FRAME_STEP)] = 0.0f;
         }
 
         /* Run processing on the cluster */
@@ -666,25 +670,9 @@ int main(void)
         pi_cluster_close(&cluster_dev);
 
         /* Hanning window requires divide by X when overlapp and add */
-        for (int i=0; i<(FRAME_SIZE-FRAME_STEP); i++) {
-            ReconstructedFrameTmp[i] = ReconstructedFrameTmp[i+FRAME_STEP] + ((int) (DenoisedFrame[i] * (1<<13)));
+        for (int i=0; i<FRAME_SIZE; i++) {
+            ReconstructedFrameTmp[i] += (DenoisedFrame[i] / 2);
         }
-        for (int i=(FRAME_SIZE-FRAME_STEP); i<FRAME_SIZE; i++) {
-            ReconstructedFrameTmp[i] = (int)(DenoisedFrame[i] * (1<<13));
-        }
-
-        /* Init Events for MEMOUT */
-        pi_evt_sig_init(&proc_task_pdmin);
-        /* Wait Events for MEMIN before filling the buffers */
-        pi_evt_wait(&proc_task_pdmout);
-
-        /* Write Buff out (Mem in buffer registered above) */
-        // #define PASS_THROUGH
-        #ifdef PASS_THROUGH
-        for(int i=0; i<FRAME_STEP; i++) BuffOut0[i] = (int) (InFrame[i] * (1<<15));
-        #else
-        for(int i=0; i<FRAME_STEP; i++) BuffOut0[i] = (int) (ReconstructedFrameTmp[i]);
-        #endif
 
         int elapsed = gap_fc_readhwtimer() - start;
         // printf("%d (Elapsed: %.2fms - Realtime: %.2fms)\n", elapsed, ((float) elapsed) / (SOC_FREQ / 1000),  ((float) FRAME_STEP) / 16);
