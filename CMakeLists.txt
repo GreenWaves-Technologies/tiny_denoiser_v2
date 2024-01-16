@@ -52,8 +52,19 @@ set(WAV_FILE  ${CMAKE_CURRENT_SOURCE_DIR}/dataset/test/noisy/p232_050.wav)
 
 set(FFT_NNTOOL_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/nntool_scripts/fft_nntool_script.py)
 set(NN_NNTOOL_SCRIPT  ${CMAKE_CURRENT_SOURCE_DIR}/nntool_scripts/nn_nntool_script.py)
-set(TRAINED_ONNX      ${CMAKE_CURRENT_SOURCE_DIR}/model/denoiser_dns.onnx)
 set(QUANT_DATASET     ${CMAKE_CURRENT_SOURCE_DIR}/dataset/quant/*)
+
+set (CONFIG_MODEL_LSTM y)
+if (${CONFIG_MODEL_DNS})
+set(TRAINED_ONNX      ${CMAKE_CURRENT_SOURCE_DIR}/model/denoiser_dns.onnx)
+set(GRU_FLAG -DGRU)
+elseif (${CONFIG_MODEL_LSTM})
+set(TRAINED_ONNX      ${CMAKE_CURRENT_SOURCE_DIR}/model/denoiser.onnx)
+else()
+set(TRAINED_ONNX      ${CMAKE_CURRENT_SOURCE_DIR}/model/denoiser_GRU.onnx)
+set(GRU_FLAG -DGRU)
+endif()
+message(STATUS "${APP_MSG_PREFIX} Using ${TRAINED_ONNX} model")
 
 ###############################################################################
 # Application's kconfig options
@@ -237,7 +248,7 @@ list(APPEND TARGET_PREPROCESSOR -DPERF
                                 -DFRAME_STEP=${FRAME_STEP}
                                 -DN_FFT=${FRAME_NFFT}
                                 ${QUANT_FLAG}
-                                -DGRU
+                                ${GRU_FLAG}
 )
 
 project(${TARGET_NAME} C ASM)
