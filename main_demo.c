@@ -575,8 +575,8 @@ int main(void)
         return -1;
     }
     #ifndef GRU
-    RNN_TYPE RNN1CState       = (RNN_TYPE *)   pi_l2_malloc(RNN_STATE_SIZE * sizeof(RNN_TYPE));
-    RNN_TYPE RNN2CState       = (RNN_TYPE *)   pi_l2_malloc(RNN_STATE_SIZE * sizeof(RNN_TYPE));
+    RNN_TYPE *RNN1CState       = (RNN_TYPE *)   pi_l2_malloc(RNN_STATE_SIZE * sizeof(RNN_TYPE));
+    RNN_TYPE *RNN2CState       = (RNN_TYPE *)   pi_l2_malloc(RNN_STATE_SIZE * sizeof(RNN_TYPE));
     if (RNN1CState==NULL || RNN2CState==NULL) {
         printf("Error allocating input/output buffers\n");
         return -1;
