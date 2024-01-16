@@ -15,7 +15,7 @@
 #define __STR(__s) #__s
 
 #define MAX_N_SAMPLES 40000
-#define GAP9_FREQ 240      // 370MHz
+#define GAP9_FREQ 370      // 370MHz
 
 struct pi_device DefaultRam; 
 struct pi_device* ram = &DefaultRam;
@@ -207,11 +207,11 @@ int main(int argc, char *argv[])
     pi_cluster_task_stacks(&task_cluster, stacks, SLAVE_STACK_SIZE);
 
     for (int i=0; i<256; i++) {
-        RNN1HState[i] = 0;
-        RNN2HState[i] = 0;
+        RNN1HState[i] = ZERO;
+        RNN2HState[i] = ZERO;
         #ifndef GRU
-        RNN1CState[i] = 0;
-        RNN2CState[i] = 0;
+        RNN1CState[i] = ZERO;
+        RNN2CState[i] = ZERO;
         #endif
     }
     for (int frame_id=0; frame_id < tot_frames; frame_id++)

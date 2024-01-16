@@ -38,7 +38,7 @@ def create_parser():
                         help="Path to the trained tflite/onnx")
     parser.add_argument('--quant_dataset', default="dataset/quant/*",
                         help="path to .wav files to use to quantize the network")
-    parser.add_argument('--stats_pickle', default="/tmp/denoiser_stats.pickle",
+    parser.add_argument('--stats_pickle', default=None,
                         help="pickle file where to store the statistics or get statistics if already saved")
     parser.add_argument('--requantize', action="store_true",
                         help="even if the stats pickle file exists, requantize the NN anyway")
@@ -92,6 +92,8 @@ def build_nntool_graph(trained_model, quant_type, quant_dataset=None, stats_file
         quant_files = glob(quant_dataset)[:5]
         if len(quant_files) < 1:
             raise ValueError("Provide quant_dataset")
+        if stats_file is None:
+            stats_file = f"/tmp/{os.path.splitext(os.path.split(trained_model)[-1])[0]}.pickle"
         if stats_file and os.path.exists(stats_file) and not requantize:
             print(f"Loading stats dictionary from {stats_file}")
             with open(stats_file, 'rb') as fp:

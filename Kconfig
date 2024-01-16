@@ -48,22 +48,20 @@ menu "DENOISER APP menu"
         prompt "Quantization Type"
         default FP16
 
+        config FP16
+            bool "FP16"
+            select CNN_SQ8
+            select CNN_FP16
+
         config FP16MIXED
             bool "Mixed FP16-INT8"
             select CNN_SQ8
             select CNN_FP16
 
-        config FP16
-            bool "FP16"
+        config FP16NE16MIXED
+            bool "Mixed FP16-INT8 NE16"
+            select CNN_SQ8
             select CNN_FP16
-
-        config SQ8
-            bool "int8"
-            select CNN_SQ8
-
-        config NE16
-            bool "NE16"
-            select CNN_SQ8
             select CNN_NE16
 
     endchoice

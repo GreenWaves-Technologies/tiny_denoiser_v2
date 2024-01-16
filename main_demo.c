@@ -28,7 +28,7 @@
 #define SAI_SDI(itf)         (48+(itf*4)+2)
 #define SAI_SDO(itf)         (48+(itf*4)+3)
 
-// #define MAX_PERFORMANCE
+#define MAX_PERFORMANCE
 #ifdef MAX_PERFORMANCE
     // Max performance settings
     #define CL_FREQ  370000000      // 370MHz
@@ -630,7 +630,7 @@ int main(void)
         /* Data arrived, wake up the cluster and set high the frequency of the SoC so that you have a better L2->L1 BW */
         pi_fll_ioctl(PI_FREQ_DOMAIN_FC, PI_FLL_IOCTL_DIV_SET, (void *) 1);
 
-        int start = gap_fc_readhwtimer();
+        // int start = gap_fc_readhwtimer();
 
         pi_ads1014_read_value(ads1014,&fpot);
         alpha = ((fpot - 1470) / 577);
@@ -674,9 +674,6 @@ int main(void)
             ReconstructedFrameTmp[i] += DenoisedFrame[i];
         }
 
-        // int elapsed = gap_fc_readhwtimer() - start;
-        // printf("%d (Elapsed: %.2fms - Realtime: %.2fms)\n", elapsed, ((float) elapsed) / (SOC_FREQ / 1000),  ((float) FRAME_STEP) / 16);
-
         /* Toggle GPIO (e.g. LED or gpio for measurements)*/
         if ((counter++ % 30) == 0) {
             gpio_val ^= 1;
@@ -685,6 +682,9 @@ int main(void)
 
         /* Set the SoC frequency back to a minimal that allow you to keep fetching data from mics */
         pi_fll_ioctl(PI_FREQ_DOMAIN_FC, PI_FLL_IOCTL_DIV_SET, (void *) 15);
+
+        // int elapsed = gap_fc_readhwtimer() - start;
+        // printf("%d (Elapsed: %.2fms - Realtime: %.2fms)\n", elapsed, ((float) elapsed) / (SOC_FREQ / 1000),  ((float) FRAME_STEP) / 16);
 
         /* Init Events for MEMIN */
         pi_evt_sig_init(&proc_task_pdmout);

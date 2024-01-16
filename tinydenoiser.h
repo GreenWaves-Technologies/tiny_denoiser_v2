@@ -19,10 +19,6 @@
 extern AT_DEFAULTFLASH_EXT_ADDR_TYPE tinydenoiser_L3_Flash;
 extern AT_DEFAULTFLASH_EXT_ADDR_TYPE tinydenoiser_L3_PrivilegedFlash;
 
-#define STFT_TYPE float
-#define NN_TYPE   f16
-#define RNN_TYPE  f16
-
 typedef struct {
     STFT_TYPE *InFrame;
     STFT_TYPE *StftOut;
