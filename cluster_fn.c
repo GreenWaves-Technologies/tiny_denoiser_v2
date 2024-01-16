@@ -28,11 +28,11 @@ void RunDenoiser(DenoiserArg_T *Arg)
     STFT_TYPE *DenoisedFrame = Arg->DenoisedFrame;
     NN_TYPE   *InputNN       = Arg->InputNN;
     NN_TYPE   *OutputNN      = Arg->OutputNN;
-    NN_TYPE   *RNN1HState    = Arg->RNN1HState;
-    NN_TYPE   *RNN2HState    = Arg->RNN2HState;
+    RNN_TYPE   *RNN1HState    = Arg->RNN1HState;
+    RNN_TYPE   *RNN2HState    = Arg->RNN2HState;
     #ifndef GRU
-    NN_TYPE   *RNN1CState    = Arg->RNN1CState;
-    NN_TYPE   *RNN2CState    = Arg->RNN2CState;
+    RNN_TYPE   *RNN1CState    = Arg->RNN1CState;
+    RNN_TYPE   *RNN2CState    = Arg->RNN2CState;
     #endif
     int *PerfCounter = Arg->PerfCounter;
 
