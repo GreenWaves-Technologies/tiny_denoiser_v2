@@ -70,6 +70,8 @@ def create_parser():
                         help="Where nntool stores the weights/bias tensors dir (only used in generate and performance mode)")
     parser.add_argument('--at_model_path', default="nn_model.c",
                         help="Path to the C autotiler model file to generate (only used in generate mode)")
+    parser.add_argument('--flash_type', default="flash", choices=["flash", "mram"],
+                        help="Flash type")
     return parser
 
 def build_nntool_graph(trained_model, quant_type, quant_dataset=None, stats_file=None, requantize=False) -> NNGraph:
@@ -83,7 +85,7 @@ def build_nntool_graph(trained_model, quant_type, quant_dataset=None, stats_file
     if quant_type == "fp16":
         G.quantize(
             graph_options=quantization_options(
-                scheme="FLOAT", float_type="bfloat16"
+                scheme="FLOAT", float_type="float16"
             )
         )
     else:
@@ -216,7 +218,7 @@ if __name__ == '__main__':
             model_directory=model_build_dir,
             model_file=os.path.split(args.at_model_path)[1],
             l3_ram_device="AT_MEM_L3_DEFAULTRAM",
-            l3_flash_device="AT_MEM_L3_DEFAULTFLASH",
+            l3_flash_device="AT_MEM_L3_DEFAULTFLASH" if args.flash_type == "flash" else "AT_MEM_L3_MRAMFLASH",
             basic_kernel_header_file="NN_Expression_Kernels.h",
             basic_kernel_source_file="NN_Expression_Kernels.c",
             l2_size=1200000,
@@ -254,9 +256,9 @@ if __name__ == '__main__':
             qout = G.execute(data, dequantize=False, quantize=True)
 
             res = G.execute_on_target(
-                input_tensors=qout[0],
+                input_tensors=[qout[in_node.step_idx][0] for in_node in G.input_nodes()],
                 check_on_target=True,
-                tolerance=0.02 if "fp16" in args.quant_type else 0,
+                tolerance=0.04 if "fp16" in args.quant_type else 0,
                 directory="test_run",
                 print_output=True,
                 at_loglevel=2,

@@ -54,7 +54,12 @@ set(FFT_NNTOOL_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/nntool_scripts/fft_nntool_scri
 set(NN_NNTOOL_SCRIPT  ${CMAKE_CURRENT_SOURCE_DIR}/nntool_scripts/nn_nntool_script.py)
 set(QUANT_DATASET     ${CMAKE_CURRENT_SOURCE_DIR}/dataset/quant/*)
 
-set (CONFIG_MODEL_LSTM y)
+if (${CONFIG_MODEL_FLASH_TYPE_DEFAULT})
+  set(FLASH_TYPE flash)
+else()
+  set(FLASH_TYPE mram)
+endif()
+
 if (${CONFIG_MODEL_DNS})
 set(TRAINED_ONNX      ${CMAKE_CURRENT_SOURCE_DIR}/model/denoiser_dns.onnx)
 set(GRU_FLAG -DGRU)
@@ -102,7 +107,8 @@ autotiler_add_model(
   MODEL_TENSORS_DIR ${FFT_FORWARD_AT_TENSORS_DIR}
   MODEL_BUILDDIR ${FFT_FORWARD_DIR}
   PRI1_USED TRUE
-  PRI1_FLASH mram
+  PRI1_FLASH ${FLASH_TYPE}
+  PRI1_FILENAME "L3_Flash_Const.dat"
   L1_MEMORY ${CONFIG_MODEL_L1_MEMORY}
   L2_MEMORY ${CONFIG_MODEL_L2_MEMORY}
   L3_MEMORY ${CONFIG_MODEL_L3_MEMORY}
@@ -119,7 +125,8 @@ autotiler_add_model(
   MODEL_TENSORS_DIR ${FFT_INVERSE_AT_TENSORS_DIR}
   MODEL_BUILDDIR ${FFT_INVERSE_DIR}
   PRI1_USED TRUE
-  PRI1_FLASH mram
+  PRI1_FLASH ${FLASH_TYPE}
+  PRI1_FILENAME "L3_Flash_Const.dat"
   L1_MEMORY ${CONFIG_MODEL_L1_MEMORY}
   L2_MEMORY ${CONFIG_MODEL_L2_MEMORY}
   L3_MEMORY ${CONFIG_MODEL_L3_MEMORY}
@@ -136,7 +143,8 @@ autotiler_add_model(
   MODEL_TENSORS_DIR ${NN_AT_TENSORS_DIR}
   MODEL_BUILDDIR ${NN_DIR}
   PRI1_USED TRUE
-  PRI1_FLASH flash
+  PRI1_FLASH ${FLASH_TYPE}
+  PRI1_FILENAME "L3_Flash_Const.dat"
   L1_MEMORY ${CONFIG_MODEL_L1_MEMORY}
   L2_MEMORY ${CONFIG_MODEL_L2_MEMORY}
   L3_MEMORY ${CONFIG_MODEL_L3_MEMORY}
@@ -161,6 +169,7 @@ add_custom_command(
               --forward_tensors_dir=${FFT_FORWARD_AT_TENSORS_DIR}
               --inverse_at_model_path=${FFT_INVERSE_AT_MODEL_PATH}
               --inverse_tensors_dir=${FFT_INVERSE_AT_TENSORS_DIR}
+              --flash_type=${FLASH_TYPE}
 )
 add_custom_target(clean_fft_model
   COMMENT "clean_fft_model: removing ${COMMON_MODEL_BUILDDIR}/${MODEL_GEN}"
@@ -177,6 +186,7 @@ add_custom_command(
                                       --quant_type=${QUANT_TYPE}
                                       --at_model_path=${NN_AT_MODEL_PATH}
                                       --tensors_dir=${NN_AT_TENSORS_DIR}
+                                      --flash_type=${FLASH_TYPE}
 )
 add_custom_target(clean_nn_model
   COMMENT "clean_nn_model: removing ${COMMON_MODEL_BUILDDIR}/${MODEL_GEN}"

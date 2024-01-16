@@ -29,6 +29,8 @@ def create_parser():
                         help="Path to the autotiler model constant files to generate")
     parser.add_argument('--inverse_tensors_dir', default=None,
                         help="Path to the autotiler model constant files to generate")
+    parser.add_argument('--flash_type', default="flash", choices=["flash", "mram"],
+                        help="Flash type")
     return parser
 
 if __name__ == '__main__':
@@ -70,7 +72,7 @@ if __name__ == '__main__':
             model_directory=os.path.split(args.forward_at_model_path)[0],
             model_file=os.path.split(args.forward_at_model_path)[1],
             graph_l1_promotion=1,
-            l3_flash_device="AT_MEM_L3_MRAMFLASH",
+            l3_flash_device="AT_MEM_L3_DEFAULTFLASH" if args.flash_type == "flash" else "AT_MEM_L3_MRAMFLASH",
             graph_monitor_cvar_name="FFT_Monitor",
             graph_produce_operinfos_cvar_name="FFT_Op",
             graph_produce_node_cvar_name="FFT_Nodes",
@@ -105,7 +107,7 @@ if __name__ == '__main__':
             model_directory=os.path.split(args.inverse_at_model_path)[0],
             model_file=os.path.split(args.inverse_at_model_path)[1],
             graph_l1_promotion=1,
-            l3_flash_device="AT_MEM_L3_MRAMFLASH",
+            l3_flash_device="AT_MEM_L3_DEFAULTFLASH" if args.flash_type == "flash" else "AT_MEM_L3_MRAMFLASH",
             graph_monitor_cvar_name="IFFT_Monitor",
             graph_produce_operinfos_cvar_name="IFFT_Op",
             graph_produce_node_cvar_name="IFFT_Nodes",
