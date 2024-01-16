@@ -20,7 +20,8 @@ extern AT_DEFAULTFLASH_EXT_ADDR_TYPE tinydenoiser_L3_Flash;
 extern AT_DEFAULTFLASH_EXT_ADDR_TYPE tinydenoiser_L3_PrivilegedFlash;
 
 #define STFT_TYPE float
-#define NN_TYPE   f16a
+#define NN_TYPE   f16
+#define RNN_TYPE  f16
 
 typedef struct {
     STFT_TYPE *InFrame;
@@ -28,10 +29,10 @@ typedef struct {
     STFT_TYPE *DenoisedFrame;
     NN_TYPE   *InputNN;
     NN_TYPE   *OutputNN;
-    NN_TYPE   *RNN1HState;
-    NN_TYPE   *RNN1CState;
-    NN_TYPE   *RNN2HState;
-    NN_TYPE   *RNN2CState;
+    RNN_TYPE   *RNN1HState;
+    RNN_TYPE   *RNN1CState;
+    RNN_TYPE   *RNN2HState;
+    RNN_TYPE   *RNN2CState;
     int *PerfCounter;
 } DenoiserArg_T;
 

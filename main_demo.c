@@ -21,24 +21,24 @@
 #include "sfu_pmsis_runtime.h"
 
 #define Q_BIT_IN 29
-#define Q_BIT_OUT 27
+#define Q_BIT_OUT 29
 
 #define SAI_SCK(itf)         (48+(itf*4)+0)
 #define SAI_WS(itf)          (48+(itf*4)+1)
 #define SAI_SDI(itf)         (48+(itf*4)+2)
 #define SAI_SDO(itf)         (48+(itf*4)+3)
 
-#define MAX_PERFORMANCE
+// #define MAX_PERFORMANCE
 #ifdef MAX_PERFORMANCE
-// Max performance settings
-#define CL_FREQ  370000000      // 370MHz
-#define SOC_FREQ 370000000      // 370MHz
-#define VOLTAGE  800
+    // Max performance settings
+    #define CL_FREQ  370000000      // 370MHz
+    #define SOC_FREQ 370000000      // 370MHz
+    #define VOLTAGE  800
 #else
-// Max energy efficiency settings
-#define CL_FREQ  240000000      // 240MHz
-#define SOC_FREQ 240000000      // 240MHz
-#define VOLTAGE  650
+    // Max energy efficiency settings
+    #define CL_FREQ  240000000      // 240MHz
+    #define SOC_FREQ 240000000      // 240MHz
+    #define VOLTAGE  650
 #endif
 
 #define PAD_GPIO_LED2    (PI_PAD_086)
@@ -642,12 +642,12 @@ int main(void)
 
         /* Rotate buffer */
         for (int i=0; i<(FRAME_SIZE - FRAME_STEP); i++) {
-            InFrame[i] = InFrame[i + FRAME_STEP];
+            InFrame              [i] = InFrame              [i + FRAME_STEP];
             ReconstructedFrameTmp[i] = ReconstructedFrameTmp[i+FRAME_STEP];
         }
         /* Read buffer in (MemOut) */
         for (int i=0; i<FRAME_STEP; i++) {
-            InFrame[i + (FRAME_SIZE - FRAME_STEP)] = (((STFT_TYPE) ((int32_t *) sfu_pdmin_buff[sfu_pdmin_buff_idx ^ 1].data)[i]) / (1<<Q_BIT_IN));
+            InFrame              [i + (FRAME_SIZE - FRAME_STEP)] = (((float) ((int32_t *) sfu_pdmin_buff[sfu_pdmin_buff_idx ^ 1].data)[i]) / (1<<Q_BIT_IN));
             ReconstructedFrameTmp[i + (FRAME_SIZE - FRAME_STEP)] = 0.0f;
         }
 
@@ -671,10 +671,10 @@ int main(void)
 
         /* Hanning window requires divide by X when overlapp and add */
         for (int i=0; i<FRAME_SIZE; i++) {
-            ReconstructedFrameTmp[i] += (DenoisedFrame[i] / 2);
+            ReconstructedFrameTmp[i] += DenoisedFrame[i];
         }
 
-        int elapsed = gap_fc_readhwtimer() - start;
+        // int elapsed = gap_fc_readhwtimer() - start;
         // printf("%d (Elapsed: %.2fms - Realtime: %.2fms)\n", elapsed, ((float) elapsed) / (SOC_FREQ / 1000),  ((float) FRAME_STEP) / 16);
 
         /* Toggle GPIO (e.g. LED or gpio for measurements)*/

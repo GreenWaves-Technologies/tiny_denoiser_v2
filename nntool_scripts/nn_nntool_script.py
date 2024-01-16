@@ -106,7 +106,7 @@ def build_nntool_graph(trained_model, quant_type, quant_dataset=None, stats_file
         if quant_type in ["mixedfp16", "mixedne16fp16"]:
             quant_opts = quantization_options(clip_type="none", allow_asymmetric_out=True, force_rnn_1_minus_1_out=True, use_ne16=quant_type == "mixedne16fp16")
             node_opts = {
-                nname: quantization_options(scheme="FLOAT", float_type="bfloat16")
+                nname: quantization_options(scheme="FLOAT", float_type="float16")
                 for nname in [
                     "input_1",
                     "Conv_0_reshape_in",
@@ -216,7 +216,7 @@ if __name__ == '__main__':
             model_directory=model_build_dir,
             model_file=os.path.split(args.at_model_path)[1],
             l3_ram_device="AT_MEM_L3_DEFAULTRAM",
-            l3_flash_device="AT_MEM_L3_MRAMFLASH",
+            l3_flash_device="AT_MEM_L3_DEFAULTFLASH",
             basic_kernel_header_file="NN_Expression_Kernels.h",
             basic_kernel_source_file="NN_Expression_Kernels.c",
             l2_size=1200000,

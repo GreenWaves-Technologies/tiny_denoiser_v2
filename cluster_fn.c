@@ -73,6 +73,10 @@ void RunDenoiser(DenoiserArg_T *Arg)
     start = gap_cl_readhwtimer();
     // In state and out state can point to the same mem area
     tinydenoiserCNN(
+        #ifndef GRU
+        RNN1CState,
+        RNN2CState,
+        #endif
         RNN1HState,
         RNN2HState,
         InputNN,
