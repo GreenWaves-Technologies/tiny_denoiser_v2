@@ -276,6 +276,7 @@ static void handle_mem_out_end(void * arg)
         &sfu_pdmin_buff[sfu_pdmin_buff_idx]);
 
     sfu_pdmin_buff_idx ^= 1;
+    pi_evt_push(&proc_task_pdmin);
 }
 
 static void handle_input_transfer_end(void *arg)
@@ -425,7 +426,9 @@ int main(void)
     pi_freq_set(PI_FREQ_DOMAIN_FC,     SOC_FREQ);
     pi_freq_set(PI_FREQ_DOMAIN_PERIPH, SOC_FREQ);
     pi_freq_set(PI_FREQ_DOMAIN_SFU,    SOC_FREQ);
+    #ifndef __PLATFORM_GVSOC__
     pi_pmu_voltage_set(PI_PMU_VOLTAGE_DOMAIN_CHIP, VOLTAGE);
+    #endif
 
     pi_pad_function_set(PAD_GPIO_LED2, PI_PAD_FUNC1);
     pi_gpio_pin_configure(PAD_GPIO_LED2, PI_GPIO_OUTPUT);
@@ -434,6 +437,7 @@ int main(void)
     /***********************************************************************************************
      * Enable slider
      **********************************************************************************************/
+    #ifndef __PLATFORM_GVSOC__
     pi_device_t*    ads1014;        // Pointer to ads10114 instance
     float th_low  = 1600.0;         // Low  Threshold In mV
     float th_high = 1800.0;         // High Threshold In mV
@@ -450,6 +454,9 @@ int main(void)
     /* Slider values: 1475 .. 2047 */
     pi_ads1014_read_value(ads1014,&fpot);
     alpha = ((fpot - 1470) / 577);
+    #else
+    alpha = 1;
+    #endif
 
     /***********************************************************************************************
      * Configure and open SFU Graph
@@ -516,7 +523,7 @@ int main(void)
     /***********************************************************************************************
      * Binding this SAI's microphone if it has been enabled by the configuration file
      **********************************************************************************************/
-    pi_sfu_pdm_itf_id_t pdm_in_itf_id_left  = { MICRO_PDM_SAI, MICRO_PDM_LEFT_CHANNEL, 1};
+    pi_sfu_pdm_itf_id_t pdm_in_itf_id_left  = { 1, 2, 1};
     if (PI_OK != pi_sfu_graph_pdm_bind(sfu_graph, SFU_Name(SFUGraph, PdmIn),  &pdm_in_itf_id_left)) {
         printf("Failed to open I2S device\n");
         return PI_FAIL;
@@ -617,38 +624,34 @@ int main(void)
     gap_fc_starttimer();
     gap_fc_resethwtimer();
 
-    pi_evt_sig_init(&proc_task_pdmout );
+    pi_evt_sig_init(&proc_task_pdmout);
+    pi_evt_sig_init(&proc_task_pdmin);
     printf("Start running\n");
 
     for (int i=0; i<FRAME_SIZE; i++) InFrame[i] = 0;
 
     int counter = 0, gpio_val = 0;
     while(1) {
+        #ifndef __PLATFORM_GVSOC__
+        pi_ads1014_read_value(ads1014,&fpot);
+        alpha = ((fpot - 1470) / 577);
+        #endif
+
         /* Wait Events for MEMIN before filling the buffers */
-        pi_evt_wait(&proc_task_pdmout);
+        pi_evt_wait(&proc_task_pdmin);
 
         /* Data arrived, wake up the cluster and set high the frequency of the SoC so that you have a better L2->L1 BW */
         pi_fll_ioctl(PI_FREQ_DOMAIN_FC, PI_FLL_IOCTL_DIV_SET, (void *) 1);
 
         // int start = gap_fc_readhwtimer();
 
-        pi_ads1014_read_value(ads1014,&fpot);
-        alpha = ((fpot - 1470) / 577);
-
-        //First Copy previous loop processed frame to output
-        for(int i=0;i<FRAME_STEP;i++) {
-            ((int32_t*)sfu_pdmout_buff[sfu_pdmout_buff_idx ^ 1].data)[i]= (int32_t)((float)(ReconstructedFrameTmp[i])*((int)(1<<Q_BIT_OUT)));
-        }
-
         /* Rotate buffer */
         for (int i=0; i<(FRAME_SIZE - FRAME_STEP); i++) {
-            InFrame              [i] = InFrame              [i + FRAME_STEP];
-            ReconstructedFrameTmp[i] = ReconstructedFrameTmp[i+FRAME_STEP];
+            InFrame[i] = InFrame[i + FRAME_STEP];
         }
         /* Read buffer in (MemOut) */
         for (int i=0; i<FRAME_STEP; i++) {
-            InFrame              [i + (FRAME_SIZE - FRAME_STEP)] = (((float) ((int32_t *) sfu_pdmin_buff[sfu_pdmin_buff_idx ^ 1].data)[i]) / (1<<Q_BIT_IN));
-            ReconstructedFrameTmp[i + (FRAME_SIZE - FRAME_STEP)] = 0.0f;
+            InFrame[i + (FRAME_SIZE - FRAME_STEP)] = (((float) ((int32_t *) sfu_pdmin_buff[sfu_pdmin_buff_idx ^ 1].data)[i]) / (1<<Q_BIT_IN));
         }
 
         /* Run processing on the cluster */
@@ -670,8 +673,19 @@ int main(void)
         pi_cluster_close(&cluster_dev);
 
         /* Hanning window requires divide by X when overlapp and add */
-        for (int i=0; i<FRAME_SIZE; i++) {
-            ReconstructedFrameTmp[i] += DenoisedFrame[i];
+        for (int i=0; i<(FRAME_SIZE-FRAME_STEP); i++) {
+            ReconstructedFrameTmp[i] = ReconstructedFrameTmp[i+FRAME_STEP] + ((int) (DenoisedFrame[i] * (1<<Q_BIT_OUT)));
+        }
+        for (int i=(FRAME_SIZE-FRAME_STEP); i<FRAME_SIZE; i++) {
+            ReconstructedFrameTmp[i] = (int)(DenoisedFrame[i] * (1<<Q_BIT_OUT));
+        }
+
+        pi_evt_wait(&proc_task_pdmout);
+
+        //First Copy previous loop processed frame to output
+        for(int i=0;i<FRAME_STEP;i++) {
+            ((int32_t*)sfu_pdmout_buff[sfu_pdmout_buff_idx ^ 1].data)[i]= (int32_t)((float)(ReconstructedFrameTmp[i]));
+            // ((int32_t*)sfu_pdmout_buff[sfu_pdmout_buff_idx ^ 1].data)[i]= (int32_t)((float)(InFrame[i]) * (1<<Q_BIT_OUT));
         }
 
         /* Toggle GPIO (e.g. LED or gpio for measurements)*/
@@ -688,6 +702,7 @@ int main(void)
 
         /* Init Events for MEMIN */
         pi_evt_sig_init(&proc_task_pdmout);
+        pi_evt_sig_init(&proc_task_pdmin);
     }
 
     tinydenoiserCNN_Destruct(0);
