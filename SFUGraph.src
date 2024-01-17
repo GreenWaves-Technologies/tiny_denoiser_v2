@@ -1,7 +1,7 @@
 SFU_CreateGraph("SFUGraph");
 
 Defines:
-    CIC_N = 8; CIC_M = 2; CIC_R = 64; CIC_Shift = 28;
+    CIC_N = 8; CIC_M = 2; CIC_R = 64; CIC_Shift = 32;
     /* CIC Filter parameters for Input 3.072 MHz, Output: 48 KHz, DynOut = N*Log2(R*M) = 8*Log2(128) = 56 => Shift = 24 for Q31, 31 for Q24 */
 
 
@@ -39,6 +39,22 @@ Filters:
             }
         };
 
+    low_pass = 
+    {   
+        IIR_BQ_DF2,
+        {
+            7,
+            {1824866486, -1857862629, 1824866486, 1253386164, -1011150449, 30, -30},
+            {1712998928, -1607856615, 1712998928, 1264736859, -949070892, -1, -30},
+            {1485667560, -1142185902, 1485667560, 1291717454, -856131197, -1, -30},
+            {1162158380, -469195325, 1162158380, 1333597547, -728109650, -1, -30},
+            {1700546851, 665236287, 1700546851, 1381972250, -585686140, -1, -30},
+            {1172792389, 1980345068, 1172792389, 1416600017, -485001248, -2, -30},
+            {1146334814, -1203631827, 1146334814, 1257472648, -1054745291, -1, -30},
+            -38
+        }
+    };
+
 Nodes:
     PdmIn = Node(PDM_IN, CIC_N, CIC_M, CIC_R, CIC_Shift);    // 3.072 MHZ Pdm In -> 48 KHz PCM out
     Resampler48To16kHz = Node(RESAMPLER.0, -3, 0); // 48 KHz PCM -> 16 KHz PCM out
@@ -53,6 +69,10 @@ Nodes:
     PdmOut2 = Node(PDM_OUT, 4, Modulator_Lin); // 48 KHz PCM -> 3.072 MHZ Pdm Out
 
 
+    low_pass_filter_in =  Node(GFU.1, low_pass);
+    low_pass_filter_out =  Node(GFU.2, low_pass);
+
+
 Configure:
     
     PdmIn.EnableRTCheck = 1;
@@ -62,13 +82,27 @@ Configure:
     Norm.Scaling = 0;
     //Lim1.Decimation = 0;
 
+    low_pass_filter_out.ExtendedPrecision = 1;
+    low_pass_filter_out.Reconfigurable = 0;
+    low_pass_filter_out.Saturate = 1;
+    low_pass_filter_out.VolumeEnable = 1;
+    low_pass_filter_out.Volume = 4;
+
+    low_pass_filter_in.ExtendedPrecision = 1;
+    low_pass_filter_in.Reconfigurable = 0;
+    low_pass_filter_in.Saturate = 1;
+    low_pass_filter_in.VolumeEnable = 0;
+    low_pass_filter_in.Volume = 5;
+
 Connects:
 
-    Connect(PdmIn, Resampler48To16kHz);
+    Connect(PdmIn, low_pass_filter_in);
+    Connect(low_pass_filter_in, Resampler48To16kHz);
     Connect(Resampler48To16kHz, MemOut);
 
     Connect(MemIn, Resampler16To48kHz);
-    Connect(Resampler16To48kHz, Lim1);
+    Connect(Resampler16To48kHz, low_pass_filter_out);
+    Connect(low_pass_filter_out, Lim1);
     Connect(Lim1, Norm);
     Connect(Norm, split);
     Connect(split.0, PdmOut1);
