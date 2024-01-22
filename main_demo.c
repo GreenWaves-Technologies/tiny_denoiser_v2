@@ -20,8 +20,8 @@
 #include "SFUGraph_L2_Descr.h"
 #include "sfu_pmsis_runtime.h"
 
-#define Q_BIT_IN 29
-#define Q_BIT_OUT 29
+#define Q_BIT_IN 15
+#define Q_BIT_OUT 15
 
 #define SAI_SCK(itf)         (48+(itf*4)+0)
 #define SAI_WS(itf)          (48+(itf*4)+1)
@@ -51,7 +51,7 @@ AT_DEFAULTFLASH_EXT_ADDR_TYPE fft_inverse_L3_Flash = 0;
 AT_DEFAULTFLASH_EXT_ADDR_TYPE tinydenoiser_L3_Flash = 0;
 AT_DEFAULTFLASH_EXT_ADDR_TYPE tinydenoiser_L3_PrivilegedFlash = 0;
 
-L2_MEM STFT_TYPE ReconstructedFrameTmp[FRAME_SIZE];
+L2_MEM float ReconstructedFrameTmp[FRAME_SIZE];
 
 extern float alpha;
 
@@ -267,16 +267,16 @@ static const pi_ssm6515_confreg_t ssm6515_confreg[CHANNEL_NUMBER] =
 /*
  * Called when a chunk has been transferred from MEM_OUT to L2.
  */
-static void handle_mem_out_end(void * arg)
+static void handle_mem_in_end(void * arg)
 {
     /* Enqueue next buffer to receive from MEM_OUT */
     pi_sfu_enqueue(
         sfu_graph, 
-        sfu_memout_port, 
-        &sfu_pdmin_buff[sfu_pdmin_buff_idx]);
+        sfu_memin_port, 
+        &sfu_pdmout_buff[sfu_pdmout_buff_idx]);
 
-    sfu_pdmin_buff_idx ^= 1;
-    pi_evt_push(&proc_task_pdmin);
+    sfu_pdmout_buff_idx ^= 1;
+    pi_evt_push(&proc_task_pdmout);
 }
 
 static void handle_input_transfer_end(void *arg)
@@ -284,12 +284,12 @@ static void handle_input_transfer_end(void *arg)
     // Enqueue next buffer
     pi_sfu_enqueue(
         sfu_graph,
-        sfu_memin_port,
-        &sfu_pdmout_buff[sfu_pdmout_buff_idx]);
+        sfu_memout_port,
+        &sfu_pdmin_buff[sfu_pdmin_buff_idx]);
 
-    sfu_pdmout_buff_idx ^= 1;
+    sfu_pdmin_buff_idx ^= 1;
 
-    pi_evt_push(&proc_task_pdmout);
+    pi_evt_push(&proc_task_pdmin);
 }
 
 /**
@@ -316,13 +316,13 @@ static pi_err_t open_sfu()
      * Configure Input / Output (MEM_OUT,MEM_IN uDMA/1D)
      **********************************************************************************************/
 
-    // Allocate I/O buffers
-    sfu_memout_port = pi_sfu_mem_port_get(sfu_graph, SFU_Name(SFUGraph, MemOut));
-    if (sfu_memout_port == NULL) {
+    //Allocated Output buffers
+    sfu_memin_port = pi_sfu_mem_port_get(sfu_graph, SFU_Name(SFUGraph, MemIn));
+    if (sfu_memin_port == NULL) {
         printf("Failed to get MEM_OUT port references\n");
         return PI_FAIL;
     }
-    pi_evt_callback_irq_init(&sfu_mem_out_task, handle_mem_out_end, 0);
+    pi_evt_callback_irq_init(&sfu_mem_in_task, handle_mem_in_end, 0);
 
     for (int i = 0; i < NB_BUFF_OUT; i++) {
         void *data = pi_l2_malloc(CHUNK_SIZE);
@@ -331,18 +331,19 @@ static pi_err_t open_sfu()
             return PI_FAIL;
         }
         for (int p=0; p<FRAME_STEP; p++) ((int *) data)[p] = 0;
-        pi_sfu_buffer_init(&sfu_pdmin_buff[i], data, FRAME_STEP, sizeof(int));
+        pi_sfu_buffer_init(&sfu_pdmout_buff[i], data, FRAME_STEP, sizeof(int));
 
-        sfu_pdmin_buff[i].task = &sfu_mem_out_task;
-        pi_sfu_enqueue(sfu_graph, sfu_memout_port, &sfu_pdmin_buff[i]);
+        sfu_pdmout_buff[i].task = &sfu_mem_in_task;
+        //pi_sfu_enqueue(sfu_graph, sfu_memin_port, &sfu_pdmout_buff[i]);
     }
-
-    sfu_memin_port = pi_sfu_mem_port_get(sfu_graph, SFU_Name(SFUGraph, MemIn));
-    if (sfu_memin_port == NULL) {
+    
+    // Allocate Input buffers
+    sfu_memout_port = pi_sfu_mem_port_get(sfu_graph, SFU_Name(SFUGraph, MemOut));
+    if (sfu_memout_port == NULL) {
         printf("Failed to get MEM_IN port references\n");
         return PI_FAIL;
     }
-    pi_evt_callback_irq_init(&sfu_mem_in_task, handle_input_transfer_end, 0);
+    pi_evt_callback_irq_init(&sfu_mem_out_task, handle_input_transfer_end, 0);
 
     for (int i = 0; i < NB_BUFF_IN; i++)
     {
@@ -352,10 +353,10 @@ static pi_err_t open_sfu()
             return PI_FAIL;
         }
         for (int p=0; p<FRAME_STEP; p++) ((int *) data)[p] = 0;
-        pi_sfu_buffer_init(&sfu_pdmout_buff[i], data, FRAME_STEP, sizeof(int));
+        pi_sfu_buffer_init(&sfu_pdmin_buff[i], data, FRAME_STEP, sizeof(int));
 
-        sfu_pdmout_buff[i].task = &sfu_mem_in_task;
-        pi_sfu_enqueue(sfu_graph, sfu_memin_port, &sfu_pdmout_buff[i]);
+        sfu_pdmin_buff[i].task = &sfu_mem_out_task;
+        pi_sfu_enqueue(sfu_graph, sfu_memout_port, &sfu_pdmin_buff[i]);
     }
 
     printf("Buffers MEM_OUT/MEM_IN for uDMA transfer initialized\n");
@@ -653,7 +654,7 @@ int main(void)
         }
         /* Read buffer in (MemOut) */
         for (int i=0; i<FRAME_STEP; i++) {
-            InFrame[i + (FRAME_SIZE - FRAME_STEP)] = (((float) ((int32_t *) sfu_pdmin_buff[sfu_pdmin_buff_idx ^ 1].data)[i]) / (1<<Q_BIT_IN));
+            InFrame[i + (FRAME_SIZE - FRAME_STEP)] = (((float) ((int32_t *) sfu_pdmin_buff[sfu_pdmin_buff_idx ^ 1].data)[i]) / (float)(1<<Q_BIT_IN));
         }
 
         /* Run processing on the cluster */
@@ -676,20 +677,27 @@ int main(void)
 
         /* Hanning window requires divide by X when overlapp and add */
         for (int i=0; i<(FRAME_SIZE-FRAME_STEP); i++) {
-            ReconstructedFrameTmp[i] = ReconstructedFrameTmp[i+FRAME_STEP] + ((int) (DenoisedFrame[i] * (1<<Q_BIT_OUT)));
+            ReconstructedFrameTmp[i] = ReconstructedFrameTmp[i+FRAME_STEP] + ((float) (DenoisedFrame[i]));
         }
         for (int i=(FRAME_SIZE-FRAME_STEP); i<FRAME_SIZE; i++) {
-            ReconstructedFrameTmp[i] = (int)(DenoisedFrame[i] * (1<<Q_BIT_OUT));
+            ReconstructedFrameTmp[i] = (float)(DenoisedFrame[i]);
         }
 
-        pi_evt_wait(&proc_task_pdmout);
+        //pi_evt_wait(&proc_task_pdmout);
 
         //First Copy previous loop processed frame to output
         for(int i=0;i<FRAME_STEP;i++) {
-            ((int32_t*)sfu_pdmout_buff[sfu_pdmout_buff_idx ^ 1].data)[i]= (int32_t)((float)(ReconstructedFrameTmp[i]));
-            // ((int32_t*)sfu_pdmout_buff[sfu_pdmout_buff_idx ^ 1].data)[i]= (int32_t)((float)(InFrame[i]) * (1<<Q_BIT_OUT));
+            ((int32_t*)sfu_pdmout_buff[sfu_pdmout_buff_idx ^ 1].data)[i]= (int32_t)((float)(ReconstructedFrameTmp[i])* (1<<Q_BIT_OUT));
+            //((int32_t*)sfu_pdmout_buff[sfu_pdmout_buff_idx ^ 1].data)[i]= (int32_t)((float)(InFrame[i]) * (1<<Q_BIT_OUT));
         }
-
+        
+        if(counter==3){
+            pi_time_wait_us(500);
+            pi_sfu_enqueue(sfu_graph, sfu_memin_port, &sfu_pdmout_buff[0]);
+            pi_sfu_enqueue(sfu_graph, sfu_memin_port, &sfu_pdmout_buff[1]);
+            SFU_GraphResetInputs(sfu_graph);
+            //pi_sfu_reset();
+        }
         /* Toggle GPIO (e.g. LED or gpio for measurements)*/
         if ((counter++ % 30) == 0) {
             gpio_val ^= 1;
@@ -703,7 +711,7 @@ int main(void)
         // printf("%d (Elapsed: %.2fms - Realtime: %.2fms)\n", elapsed, ((float) elapsed) / (SOC_FREQ / 1000),  ((float) FRAME_STEP) / 16);
 
         /* Init Events for MEMIN */
-        pi_evt_sig_init(&proc_task_pdmout);
+        //pi_evt_sig_init(&proc_task_pdmout);
         pi_evt_sig_init(&proc_task_pdmin);
     }
 
