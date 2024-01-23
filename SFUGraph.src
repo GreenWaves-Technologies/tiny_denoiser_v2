@@ -1,7 +1,7 @@
 SFU_CreateGraph("SFUGraph");
 
 Defines:
-    CIC_N = 8; CIC_M = 2; CIC_R = 64; CIC_Shift = 32;
+    CIC_N = 8; CIC_M = 2; CIC_R = 64; CIC_Shift = 26;
     /* CIC Filter parameters for Input 3.072 MHz, Output: 48 KHz, DynOut = N*Log2(R*M) = 8*Log2(128) = 56 => Shift = 24 for Q31, 31 for Q24 */
 
 
@@ -68,41 +68,23 @@ Nodes:
     PdmOut1 = Node(PDM_OUT, 4, Modulator_Lin); // 48 KHz PCM -> 3.072 MHZ Pdm Out
     PdmOut2 = Node(PDM_OUT, 4, Modulator_Lin); // 48 KHz PCM -> 3.072 MHZ Pdm Out
 
-
-    low_pass_filter_in =  Node(GFU.1, low_pass);
-    low_pass_filter_out =  Node(GFU.2, low_pass);
-
-
 Configure:
     
     PdmIn.EnableRTCheck = 1;
     //PdmOut1.EnableRTCheck = 1;
-    Norm.EnableSat = 1;
+    Norm.EnableSat = 0;
     Norm.Precision = 24;
     Norm.Scaling = 0;
     //Lim1.Decimation = 0;
 
-    low_pass_filter_out.ExtendedPrecision = 1;
-    low_pass_filter_out.Reconfigurable = 0;
-    low_pass_filter_out.Saturate = 1;
-    low_pass_filter_out.VolumeEnable = 1;
-    low_pass_filter_out.Volume = 4;
-
-    low_pass_filter_in.ExtendedPrecision = 1;
-    low_pass_filter_in.Reconfigurable = 0;
-    low_pass_filter_in.Saturate = 1;
-    low_pass_filter_in.VolumeEnable = 0;
-    low_pass_filter_in.Volume = 5;
 
 Connects:
 
-    Connect(PdmIn, low_pass_filter_in);
-    Connect(low_pass_filter_in, Resampler48To16kHz);
+    Connect(PdmIn, Resampler48To16kHz);
     Connect(Resampler48To16kHz, MemOut);
 
     Connect(MemIn, Resampler16To48kHz);
-    Connect(Resampler16To48kHz, low_pass_filter_out);
-    Connect(low_pass_filter_out, Lim1);
+    Connect(Resampler16To48kHz, Lim1);
     Connect(Lim1, Norm);
     Connect(Norm, split);
     Connect(split.0, PdmOut1);

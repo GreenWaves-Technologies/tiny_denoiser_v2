@@ -20,8 +20,8 @@
 #include "SFUGraph_L2_Descr.h"
 #include "sfu_pmsis_runtime.h"
 
-#define Q_BIT_IN 15
-#define Q_BIT_OUT 15
+#define Q_BIT_IN 26
+#define Q_BIT_OUT 26
 
 #define SAI_SCK(itf)         (48+(itf*4)+0)
 #define SAI_WS(itf)          (48+(itf*4)+1)
@@ -51,7 +51,7 @@ AT_DEFAULTFLASH_EXT_ADDR_TYPE fft_inverse_L3_Flash = 0;
 AT_DEFAULTFLASH_EXT_ADDR_TYPE tinydenoiser_L3_Flash = 0;
 AT_DEFAULTFLASH_EXT_ADDR_TYPE tinydenoiser_L3_PrivilegedFlash = 0;
 
-L2_MEM float ReconstructedFrameTmp[FRAME_SIZE];
+L2_MEM STFT_TYPE ReconstructedFrameTmp[512];
 
 extern float alpha;
 
@@ -69,7 +69,7 @@ extern float alpha;
 #define NB_BUFF_IN      2
 
 #define MICRO_PDM_DIRECTION     DT_MICRO_AL_PDM_DIRECTION
-#define MICRO_PDM_RIGHT_CHANNEL DT_MICRO_AR_PDM_CHANNEL
+#define MICRO_PDM_RIGHT_CHANNEL DT_MICRO_AL_PDM_CHANNEL
 #define MICRO_PDM_LEFT_CHANNEL  DT_MICRO_AL_PDM_CHANNEL
 #define MICRO_PDM_SAI           DT_MICRO_AL_SAI_ITF
 
@@ -99,8 +99,8 @@ static pi_sfu_mem_port_t *sfu_memout_port; // Memory port context
 static pi_sfu_mem_port_t *sfu_memin_port;
 
 // List of buffer lists (a list for each output port)
-static pi_sfu_buffer_t sfu_pdmin_buff[NB_BUFF_OUT];
-static pi_sfu_buffer_t sfu_pdmout_buff[NB_BUFF_IN];
+static pi_sfu_buffer_t sfu_pdmin_buff[NB_BUFF_IN];
+static pi_sfu_buffer_t sfu_pdmout_buff[NB_BUFF_OUT];
 
 static uint32_t sfu_pdmin_buff_idx = 0;
 static uint32_t sfu_pdmout_buff_idx = 0;
@@ -286,9 +286,7 @@ static void handle_input_transfer_end(void *arg)
         sfu_graph,
         sfu_memout_port,
         &sfu_pdmin_buff[sfu_pdmin_buff_idx]);
-
     sfu_pdmin_buff_idx ^= 1;
-
     pi_evt_push(&proc_task_pdmin);
 }
 
@@ -431,8 +429,8 @@ int main(void)
     pi_pmu_voltage_set(PI_PMU_VOLTAGE_DOMAIN_CHIP, VOLTAGE);
     #endif
 
-    pi_pad_function_set(PAD_GPIO_LED2, PI_PAD_FUNC1);
-    pi_gpio_pin_configure(PAD_GPIO_LED2, PI_GPIO_OUTPUT);
+    //pi_pad_function_set(PAD_GPIO_LED2, PI_PAD_FUNC1);
+    //pi_gpio_pin_configure(PAD_GPIO_LED2, PI_GPIO_OUTPUT);
 
 
     /***********************************************************************************************
@@ -465,8 +463,8 @@ int main(void)
     if(PI_OK != open_sfu()) return PI_FAIL;
     printf("SFU Opened\n");
 
-    pi_sfu_volume_set(3, 3, 0);
-    pi_sfu_volume_set(4, 3, 0);
+    // pi_sfu_volume_set(3, 3, 0);
+    // pi_sfu_volume_set(4, 3, 0);
     /***********************************************************************************************
      * Setup SAI interfaces
      **********************************************************************************************/
@@ -526,7 +524,8 @@ int main(void)
     /***********************************************************************************************
      * Binding this SAI's microphone if it has been enabled by the configuration file
      **********************************************************************************************/
-    pi_sfu_pdm_itf_id_t pdm_in_itf_id_left  = { 1, 2, 1};
+    //Sai, Channel, isOutput
+    pi_sfu_pdm_itf_id_t pdm_in_itf_id_left  = { 2, 2, 1};
     if (PI_OK != pi_sfu_graph_pdm_bind(sfu_graph, SFU_Name(SFUGraph, PdmIn),  &pdm_in_itf_id_left)) {
         printf("Failed to open I2S device\n");
         return PI_FAIL;
@@ -567,19 +566,18 @@ int main(void)
 
     printf("I2S Started\n");
 
-    pi_sfu_graph_load(sfu_graph);
 
     /***********************************************************************************************
      * Configure OS task that will be used to trigger processing of chunk received from MEM_OUT.
      **********************************************************************************************/
 
-    STFT_TYPE *InFrame          = (STFT_TYPE *) pi_l2_malloc(FRAME_SIZE * sizeof(STFT_TYPE));
-    STFT_TYPE *StftOut          = (STFT_TYPE *) pi_l2_malloc(2 * STFT_SIZE * sizeof(STFT_TYPE));
-    STFT_TYPE *DenoisedFrame    = (STFT_TYPE *) pi_l2_malloc(FRAME_SIZE * sizeof(STFT_TYPE));
-    NN_TYPE   *InputNN          = (NN_TYPE *)   pi_l2_malloc(STFT_SIZE * sizeof(NN_TYPE));
-    NN_TYPE   *OutputNN         = (NN_TYPE *)   pi_l2_malloc(STFT_SIZE * sizeof(NN_TYPE));
-    RNN_TYPE   *RNN1HState       = (RNN_TYPE *)   pi_l2_malloc(RNN_STATE_SIZE * sizeof(RNN_TYPE));
-    RNN_TYPE   *RNN2HState       = (RNN_TYPE *)   pi_l2_malloc(RNN_STATE_SIZE * sizeof(RNN_TYPE));
+    STFT_TYPE *InFrame          = (STFT_TYPE *)  pi_l2_malloc(512 * sizeof(STFT_TYPE));
+    STFT_TYPE *StftOut          = (STFT_TYPE *)  pi_l2_malloc(2 * STFT_SIZE * sizeof(STFT_TYPE));
+    STFT_TYPE *DenoisedFrame    = (STFT_TYPE *)  pi_l2_malloc(512 * sizeof(STFT_TYPE));
+    NN_TYPE   *InputNN          = (NN_TYPE *)    pi_l2_malloc(STFT_SIZE * sizeof(NN_TYPE));
+    NN_TYPE   *OutputNN         = (NN_TYPE *)    pi_l2_malloc(STFT_SIZE * sizeof(NN_TYPE));
+    RNN_TYPE  *RNN1HState       = (RNN_TYPE *)   pi_l2_malloc(RNN_STATE_SIZE * sizeof(RNN_TYPE));
+    RNN_TYPE  *RNN2HState       = (RNN_TYPE *)   pi_l2_malloc(RNN_STATE_SIZE * sizeof(RNN_TYPE));
     if (InFrame==NULL || StftOut==NULL || DenoisedFrame==NULL || InputNN==NULL || OutputNN==NULL || RNN1HState==NULL || RNN2HState==NULL) {
         printf("Error allocating input/output buffers\n");
         return -1;
@@ -631,9 +629,11 @@ int main(void)
     pi_evt_sig_init(&proc_task_pdmin);
     printf("Start running\n");
 
-    for (int i=0; i<FRAME_SIZE; i++) InFrame[i] = 0;
+    for (int i=0; i<512; i++) {InFrame[i] = 0;}
+    for (int i=0; i<512; i++) {ReconstructedFrameTmp[i]=0;}
 
     int counter = 0, gpio_val = 0;
+    pi_sfu_graph_load(sfu_graph);
     while(1) {
         #ifndef __PLATFORM_GVSOC__
         pi_ads1014_read_value(ads1014,&fpot);
@@ -653,8 +653,10 @@ int main(void)
             InFrame[i] = InFrame[i + FRAME_STEP];
         }
         /* Read buffer in (MemOut) */
+        int a;
+        if(sfu_pdmin_buff_idx==0)a=1; else a=0;
         for (int i=0; i<FRAME_STEP; i++) {
-            InFrame[i + (FRAME_SIZE - FRAME_STEP)] = (((float) ((int32_t *) sfu_pdmin_buff[sfu_pdmin_buff_idx ^ 1].data)[i]) / (float)(1<<Q_BIT_IN));
+            InFrame[i + (FRAME_SIZE - FRAME_STEP)] = (STFT_TYPE)(((float)((int32_t *) sfu_pdmin_buff[a].data)[i]) / (1<<Q_BIT_IN));
         }
 
         /* Run processing on the cluster */
@@ -663,7 +665,7 @@ int main(void)
             printf("Cluster open failed !\n\r");
             return PI_FAIL;
         }
-
+        pi_fll_ioctl(PI_FREQ_DOMAIN_CL, PI_FLL_IOCTL_DIV_SET, (void *) 1);
         tinydenoiserCNN_Construct(1);
         fft_forward_L1_Memory = tinydenoiser_L1_Memory;
         fft_inverse_L1_Memory = tinydenoiser_L1_Memory;
@@ -677,17 +679,18 @@ int main(void)
 
         /* Hanning window requires divide by X when overlapp and add */
         for (int i=0; i<(FRAME_SIZE-FRAME_STEP); i++) {
-            ReconstructedFrameTmp[i] = ReconstructedFrameTmp[i+FRAME_STEP] + ((float) (DenoisedFrame[i]));
+            ReconstructedFrameTmp[i] = ReconstructedFrameTmp[i+FRAME_STEP] + ((STFT_TYPE) (DenoisedFrame[i]/4));
         }
         for (int i=(FRAME_SIZE-FRAME_STEP); i<FRAME_SIZE; i++) {
-            ReconstructedFrameTmp[i] = (float)(DenoisedFrame[i]);
+            ReconstructedFrameTmp[i] = (STFT_TYPE)(DenoisedFrame[i]/4);
         }
 
         //pi_evt_wait(&proc_task_pdmout);
 
         //First Copy previous loop processed frame to output
+        if(sfu_pdmin_buff_idx==0)a=1; else a=0;
         for(int i=0;i<FRAME_STEP;i++) {
-            ((int32_t*)sfu_pdmout_buff[sfu_pdmout_buff_idx ^ 1].data)[i]= (int32_t)((float)(ReconstructedFrameTmp[i])* (1<<Q_BIT_OUT));
+            ((int32_t*)sfu_pdmout_buff[a].data)[i]= (int32_t)(((float)ReconstructedFrameTmp[i])*(1<<Q_BIT_OUT));
             //((int32_t*)sfu_pdmout_buff[sfu_pdmout_buff_idx ^ 1].data)[i]= (int32_t)((float)(InFrame[i]) * (1<<Q_BIT_OUT));
         }
         
@@ -695,14 +698,15 @@ int main(void)
             pi_time_wait_us(500);
             pi_sfu_enqueue(sfu_graph, sfu_memin_port, &sfu_pdmout_buff[0]);
             pi_sfu_enqueue(sfu_graph, sfu_memin_port, &sfu_pdmout_buff[1]);
-            SFU_GraphResetInputs(sfu_graph);
-            //pi_sfu_reset();
+            //SFU_GraphResetInputs(sfu_graph);
+            pi_sfu_reset();
         }
+
         /* Toggle GPIO (e.g. LED or gpio for measurements)*/
-        if ((counter++ % 30) == 0) {
-            gpio_val ^= 1;
-            pi_gpio_pin_write(PAD_GPIO_LED2, gpio_val);
-        }
+        // if ((counter % 30) == 0) {
+        //     gpio_val ^= 1;
+        //     pi_gpio_pin_write(PAD_GPIO_LED2, gpio_val);
+        // }
 
         /* Set the SoC frequency back to a minimal that allow you to keep fetching data from mics */
         pi_fll_ioctl(PI_FREQ_DOMAIN_FC, PI_FLL_IOCTL_DIV_SET, (void *) 15);
@@ -713,6 +717,7 @@ int main(void)
         /* Init Events for MEMIN */
         //pi_evt_sig_init(&proc_task_pdmout);
         pi_evt_sig_init(&proc_task_pdmin);
+        counter++;
     }
 
     tinydenoiserCNN_Destruct(0);
