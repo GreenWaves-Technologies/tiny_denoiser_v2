@@ -51,7 +51,7 @@ AT_DEFAULTFLASH_EXT_ADDR_TYPE fft_inverse_L3_Flash = 0;
 AT_DEFAULTFLASH_EXT_ADDR_TYPE tinydenoiser_L3_Flash = 0;
 AT_DEFAULTFLASH_EXT_ADDR_TYPE tinydenoiser_L3_PrivilegedFlash = 0;
 
-L2_MEM STFT_TYPE ReconstructedFrameTmp[512];
+L2_MEM STFT_TYPE ReconstructedFrameTmp[N_FFT];
 
 extern float alpha;
 
@@ -429,8 +429,8 @@ int main(void)
     pi_pmu_voltage_set(PI_PMU_VOLTAGE_DOMAIN_CHIP, VOLTAGE);
     #endif
 
-    //pi_pad_function_set(PAD_GPIO_LED2, PI_PAD_FUNC1);
-    //pi_gpio_pin_configure(PAD_GPIO_LED2, PI_GPIO_OUTPUT);
+    pi_pad_function_set(PAD_GPIO_LED2, PI_PAD_FUNC1);
+    pi_gpio_pin_configure(PAD_GPIO_LED2, PI_GPIO_OUTPUT);
 
 
     /***********************************************************************************************
@@ -463,8 +463,6 @@ int main(void)
     if(PI_OK != open_sfu()) return PI_FAIL;
     printf("SFU Opened\n");
 
-    // pi_sfu_volume_set(3, 3, 0);
-    // pi_sfu_volume_set(4, 3, 0);
     /***********************************************************************************************
      * Setup SAI interfaces
      **********************************************************************************************/
@@ -571,9 +569,9 @@ int main(void)
      * Configure OS task that will be used to trigger processing of chunk received from MEM_OUT.
      **********************************************************************************************/
 
-    STFT_TYPE *InFrame          = (STFT_TYPE *)  pi_l2_malloc(512 * sizeof(STFT_TYPE));
+    STFT_TYPE *InFrame          = (STFT_TYPE *)  pi_l2_malloc(N_FFT * sizeof(STFT_TYPE));
     STFT_TYPE *StftOut          = (STFT_TYPE *)  pi_l2_malloc(2 * STFT_SIZE * sizeof(STFT_TYPE));
-    STFT_TYPE *DenoisedFrame    = (STFT_TYPE *)  pi_l2_malloc(512 * sizeof(STFT_TYPE));
+    STFT_TYPE *DenoisedFrame    = (STFT_TYPE *)  pi_l2_malloc(N_FFT * sizeof(STFT_TYPE));
     NN_TYPE   *InputNN          = (NN_TYPE *)    pi_l2_malloc(STFT_SIZE * sizeof(NN_TYPE));
     NN_TYPE   *OutputNN         = (NN_TYPE *)    pi_l2_malloc(STFT_SIZE * sizeof(NN_TYPE));
     RNN_TYPE  *RNN1HState       = (RNN_TYPE *)   pi_l2_malloc(RNN_STATE_SIZE * sizeof(RNN_TYPE));
@@ -629,8 +627,8 @@ int main(void)
     pi_evt_sig_init(&proc_task_pdmin);
     printf("Start running\n");
 
-    for (int i=0; i<512; i++) {InFrame[i] = 0;}
-    for (int i=0; i<512; i++) {ReconstructedFrameTmp[i]=0;}
+    for (int i=0; i<N_FFT; i++) {InFrame[i] = 0;}
+    for (int i=0; i<N_FFT; i++) {ReconstructedFrameTmp[i]=0;}
 
     int counter = 0, gpio_val = 0;
     pi_sfu_graph_load(sfu_graph);
@@ -649,14 +647,12 @@ int main(void)
         // int start = gap_fc_readhwtimer();
 
         /* Rotate buffer */
-        for (int i=0; i<(FRAME_SIZE - FRAME_STEP); i++) {
+        for (int i=0; i<(N_FFT - FRAME_STEP); i++) {
             InFrame[i] = InFrame[i + FRAME_STEP];
         }
         /* Read buffer in (MemOut) */
-        int a;
-        if(sfu_pdmin_buff_idx==0)a=1; else a=0;
         for (int i=0; i<FRAME_STEP; i++) {
-            InFrame[i + (FRAME_SIZE - FRAME_STEP)] = (STFT_TYPE)(((float)((int32_t *) sfu_pdmin_buff[a].data)[i]) / (1<<Q_BIT_IN));
+            InFrame[i + (N_FFT - FRAME_STEP)] = (((float) ((int32_t *) sfu_pdmin_buff[sfu_pdmin_buff_idx ^ 1].data)[i]) / (1<<Q_BIT_IN));
         }
 
         /* Run processing on the cluster */
@@ -665,7 +661,7 @@ int main(void)
             printf("Cluster open failed !\n\r");
             return PI_FAIL;
         }
-        pi_fll_ioctl(PI_FREQ_DOMAIN_CL, PI_FLL_IOCTL_DIV_SET, (void *) 1);
+
         tinydenoiserCNN_Construct(1);
         fft_forward_L1_Memory = tinydenoiser_L1_Memory;
         fft_inverse_L1_Memory = tinydenoiser_L1_Memory;
@@ -678,19 +674,18 @@ int main(void)
         pi_cluster_close(&cluster_dev);
 
         /* Hanning window requires divide by X when overlapp and add */
-        for (int i=0; i<(FRAME_SIZE-FRAME_STEP); i++) {
-            ReconstructedFrameTmp[i] = ReconstructedFrameTmp[i+FRAME_STEP] + ((STFT_TYPE) (DenoisedFrame[i]/4));
+        for (int i=0; i<(N_FFT-FRAME_STEP); i++) {
+            ReconstructedFrameTmp[i] = ReconstructedFrameTmp[i+FRAME_STEP] + ((STFT_TYPE) (DenoisedFrame[i] / 4));
         }
-        for (int i=(FRAME_SIZE-FRAME_STEP); i<FRAME_SIZE; i++) {
+        for (int i=(N_FFT-FRAME_STEP); i<N_FFT; i++) {
             ReconstructedFrameTmp[i] = (STFT_TYPE)(DenoisedFrame[i]/4);
         }
 
         //pi_evt_wait(&proc_task_pdmout);
 
         //First Copy previous loop processed frame to output
-        if(sfu_pdmin_buff_idx==0)a=1; else a=0;
         for(int i=0;i<FRAME_STEP;i++) {
-            ((int32_t*)sfu_pdmout_buff[a].data)[i]= (int32_t)(((float)ReconstructedFrameTmp[i])*(1<<Q_BIT_OUT));
+            ((int32_t*)sfu_pdmout_buff[sfu_pdmout_buff_idx ^ 1].data)[i]= (int32_t)(((float)ReconstructedFrameTmp[i])*(1<<Q_BIT_OUT));
             //((int32_t*)sfu_pdmout_buff[sfu_pdmout_buff_idx ^ 1].data)[i]= (int32_t)((float)(InFrame[i]) * (1<<Q_BIT_OUT));
         }
         
@@ -703,10 +698,10 @@ int main(void)
         }
 
         /* Toggle GPIO (e.g. LED or gpio for measurements)*/
-        // if ((counter % 30) == 0) {
-        //     gpio_val ^= 1;
-        //     pi_gpio_pin_write(PAD_GPIO_LED2, gpio_val);
-        // }
+        if ((counter++ % 30) == 0) {
+            gpio_val ^= 1;
+            pi_gpio_pin_write(PAD_GPIO_LED2, gpio_val);
+        }
 
         /* Set the SoC frequency back to a minimal that allow you to keep fetching data from mics */
         pi_fll_ioctl(PI_FREQ_DOMAIN_FC, PI_FLL_IOCTL_DIV_SET, (void *) 15);
@@ -717,7 +712,6 @@ int main(void)
         /* Init Events for MEMIN */
         //pi_evt_sig_init(&proc_task_pdmout);
         pi_evt_sig_init(&proc_task_pdmin);
-        counter++;
     }
 
     tinydenoiserCNN_Destruct(0);

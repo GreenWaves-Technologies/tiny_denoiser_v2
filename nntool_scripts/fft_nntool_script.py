@@ -11,7 +11,7 @@ def create_parser():
     # create the top-level parser
     parser = argparse.ArgumentParser(prog='fft_at_generators')
 
-    parser.add_argument('--float_type', default="float16",
+    parser.add_argument('--float_type', default="float32",
                         help="Float data type")
     parser.add_argument('--n_fft', default=512, type=int,
                         help="number of fft points")

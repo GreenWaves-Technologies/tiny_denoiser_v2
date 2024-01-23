@@ -60,15 +60,17 @@ else()
   set(FLASH_TYPE mram)
 endif()
 
-# if (${CONFIG_MODEL_DNS})
-set(TRAINED_ONNX      ${CMAKE_CURRENT_SOURCE_DIR}/model/denoiser_dns.onnx)
-# set(GRU_FLAG -DGRU)
-# elseif (${CONFIG_MODEL_LSTM})
-# set(TRAINED_ONNX      ${CMAKE_CURRENT_SOURCE_DIR}/model/denoiser.onnx)
-# else()
-# set(TRAINED_ONNX      ${CMAKE_CURRENT_SOURCE_DIR}/model/denoiser_GRU.onnx)
-set(GRU_FLAG -DGRU)
-# endif()
+set(CONFIG_MODEL_DNS y)
+if (${CONFIG_MODEL_DNS})
+  set(TRAINED_ONNX      ${CMAKE_CURRENT_SOURCE_DIR}/model/denoiser_dns.onnx)
+  set(GRU_FLAG -DGRU)
+elseif (${CONFIG_MODEL_LSTM})
+  set(TRAINED_ONNX      ${CMAKE_CURRENT_SOURCE_DIR}/model/denoiser.onnx)
+else()
+  set(TRAINED_ONNX      ${CMAKE_CURRENT_SOURCE_DIR}/model/denoiser_GRU.onnx)
+  set(GRU_FLAG -DGRU)
+endif()
+
 message(STATUS "${APP_MSG_PREFIX} Using ${TRAINED_ONNX} model")
 
 ###############################################################################
@@ -93,7 +95,7 @@ elseif(CONFIG_FP16NE16MIXED)
 else()
   message(ERROR "${APP_MSG_PREFIX} You need to provide a valid quant type")
 endif()
-list(APPEND QUANT_FLAG -DSTFT_TYPE=float16)
+list(APPEND QUANT_FLAG -DSTFT_TYPE=float)
 
 ###############################################################################
 # FFT Pre/post processing code gen
@@ -174,7 +176,7 @@ add_custom_command(
               --n_fft=${FRAME_NFFT}
               --frame_size=${FRAME_SIZE}
               --frame_step=${FRAME_STEP}
-              --window_type="hanning"
+              --window_type="hann"
               --forward_at_model_path=${FFT_FORWARD_AT_MODEL_PATH}
               --forward_tensors_dir=${FFT_FORWARD_AT_TENSORS_DIR}
               --inverse_at_model_path=${FFT_INVERSE_AT_MODEL_PATH}
