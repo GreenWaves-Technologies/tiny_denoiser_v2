@@ -55,6 +55,19 @@ Filters:
         }
     };
 
+    high_filter_48K_50_to_100 =
+    {
+        IIR_BQ_DF2,
+            {
+                4,
+                {872502937, -1744894556, 872502937, 2132701300, -1059726658, 30, -30},
+                {878054114, -1756055335, 878054114, 2109794639, -1037245619, 1, -30},
+                {941417629, -1882827977, 941417629, 2059596646, -988041281, 2, -30},
+                {860620255, -1721093514, 860620255, 2143111282, -1069999529, 4, -30},
+                -36
+            }
+    };
+
 Nodes:
     PdmIn = Node(PDM_IN, CIC_N, CIC_M, CIC_R, CIC_Shift);    // 3.072 MHZ Pdm In -> 48 KHz PCM out
     Resampler48To16kHz = Node(RESAMPLER.0, -3, 0); // 48 KHz PCM -> 16 KHz PCM out
@@ -68,6 +81,9 @@ Nodes:
     PdmOut1 = Node(PDM_OUT, 4, Modulator_Lin); // 48 KHz PCM -> 3.072 MHZ Pdm Out
     PdmOut2 = Node(PDM_OUT, 4, Modulator_Lin); // 48 KHz PCM -> 3.072 MHZ Pdm Out
 
+    hp_filter_in  =  Node(GFU.1, high_filter_48K_50_to_100);
+    hp_filter_out =  Node(GFU.2, high_filter_48K_50_to_100);
+
 Configure:
     
     PdmIn.EnableRTCheck = 1;
@@ -77,14 +93,27 @@ Configure:
     Norm.Scaling = 0;
     //Lim1.Decimation = 0;
 
+    hp_filter_in.ExtendedPrecision = 1;
+    hp_filter_in.Reconfigurable = 1;
+    hp_filter_in.Saturate = 1;
+    hp_filter_in.VolumeEnable = 0;
+    hp_filter_in.Volume = 0;
+
+    hp_filter_out.ExtendedPrecision = 1;
+    hp_filter_out.Reconfigurable = 1;
+    hp_filter_out.Saturate = 1;
+    hp_filter_out.VolumeEnable = 0;
+    hp_filter_out.Volume = 0;
 
 Connects:
 
-    Connect(PdmIn, Resampler48To16kHz);
+    Connect(PdmIn, hp_filter_in);
+    Connect(hp_filter_in, Resampler48To16kHz);
     Connect(Resampler48To16kHz, MemOut);
 
     Connect(MemIn, Resampler16To48kHz);
-    Connect(Resampler16To48kHz, Lim1);
+    Connect(Resampler16To48kHz, hp_filter_out);
+    Connect(hp_filter_out, Lim1);
     Connect(Lim1, Norm);
     Connect(Norm, split);
     Connect(split.0, PdmOut1);

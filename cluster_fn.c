@@ -63,14 +63,14 @@ void RunDenoiser(DenoiserArg_T *Arg)
     DumpToFile("stft", FrameIdx, StftOut, 2*STFT_SIZE*sizeof(STFT_TYPE));
     #endif
 
-    StftOut[0]=0;
-    StftOut[1]=0;
-    StftOut[2]=0;
-    StftOut[3]=0;
-    StftOut[4]=0;
-    StftOut[5]=0;
-    StftOut[6]=0;
-    StftOut[7]=0;
+    // StftOut[0]=0;
+    // StftOut[1]=0;
+    // StftOut[2]=0;
+    // StftOut[3]=0;
+    // StftOut[4]=0;
+    // StftOut[5]=0;
+    // StftOut[6]=0;
+    // StftOut[7]=0;
     /***********
      *  Preprocessing (MagSquared)
      **********/
