@@ -60,16 +60,17 @@ else()
   set(FLASH_TYPE mram)
 endif()
 
-set(CONFIG_MODEL_DNS y)
-if (${CONFIG_MODEL_DNS})
-  set(TRAINED_ONNX      ${CMAKE_CURRENT_SOURCE_DIR}/model/denoiser_dns.onnx)
-  set(GRU_FLAG -DGRU)
-elseif (${CONFIG_MODEL_LSTM})
-  set(TRAINED_ONNX      ${CMAKE_CURRENT_SOURCE_DIR}/model/denoiser.onnx)
-else()
-  set(TRAINED_ONNX      ${CMAKE_CURRENT_SOURCE_DIR}/model/denoiser_GRU.onnx)
-  set(GRU_FLAG -DGRU)
-endif()
+# set(CONFIG_MODEL_DNS y)
+# if (${CONFIG_MODEL_DNS})
+#   set(TRAINED_ONNX      ${CMAKE_CURRENT_SOURCE_DIR}/model/denoiser_dns.onnx)
+#   set(GRU_FLAG -DGRU)
+# elseif (${CONFIG_MODEL_LSTM})
+#   set(TRAINED_ONNX      ${CMAKE_CURRENT_SOURCE_DIR}/model/denoiser.onnx)
+# else()
+  set(TRAINED_ONNX      ${CMAKE_CURRENT_SOURCE_DIR}/model/tt_denoiser_rank_2.onnx)
+  #set(TRAINED_ONNX      ${CMAKE_CURRENT_SOURCE_DIR}/model/FullRankGRU.onnx)
+  #set(GRU_FLAG -DGRU)
+# endif()
 
 message(STATUS "${APP_MSG_PREFIX} Using ${TRAINED_ONNX} model")
 
@@ -226,6 +227,7 @@ list(APPEND TARGET_SRCS ${MAIN}
                         ${SFU_KERNEL_C}
                         $ENV{SFU_RUNTIME}/SFU_RT.c
                         ${CMAKE_BINARY_DIR}/SFUGraph_L2_Descr.c
+                        ${COMMON_MODEL_BUILDDIR}/NN_Expression_Kernels.c
 )
 
 list(APPEND TARGET_INCS -I$ENV{GAP_H_INC}
