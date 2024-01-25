@@ -237,6 +237,7 @@ list(APPEND TARGET_SRCS ${MAIN}
                         ${SFU_KERNEL_C}
                         $ENV{SFU_RUNTIME}/SFU_RT.c
                         ${CMAKE_BINARY_DIR}/SFUGraph_L2_Descr.c
+                        ${NN_EXPRESSION_KERNELS}
 )
 
 list(APPEND TARGET_INCS -I$ENV{GAP_H_INC}
