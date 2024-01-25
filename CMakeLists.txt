@@ -192,8 +192,7 @@ add_custom_command(
   OUTPUT ${NN_AT_MODEL_PATH} ${NN_AT_TENSORS_DIR}
   COMMENT "Generate the autotiler model: ${NN_AT_MODEL_PATH}"
   DEPENDS ${NN_NNTOOL_SCRIPT}
-  COMMAND python3 ${NN_NNTOOL_SCRIPT} --mode=generate_at_model
-                                      --trained_model=${TRAINED_ONNX}
+  COMMAND python3 ${NN_NNTOOL_SCRIPT} --trained_model=${TRAINED_ONNX}
                                       --quant_dataset=${QUANT_DATASET}
                                       --quant_type=${QUANT_TYPE}
                                       --at_model_path=${NN_AT_MODEL_PATH}
