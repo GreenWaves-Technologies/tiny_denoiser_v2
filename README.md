@@ -68,6 +68,11 @@ python nntool_scripts/test_nntool_model.py --mode test_dataset --trained_model m
 [valentini]: https://datashare.ed.ac.uk/handle/10283/2791
 
 Results:
-| Path                 | Type | Trained on  | Pytorch     | NNTool fp32 | NNTool fp16 | NNTool MixedFp16 |
-|----------------------|------|-------------|-------------|-------------|-------------|------------------|
-| denoiser_dns.onnx    | GRU  | DNS         | PESQ= STOI= | PESQ= STOI= | PESQ= STOI= | PESQ= STOI=      | 
+| Path                  | Type | Trained on  | Pytorch     | NNTool fp32 | NNTool fp16 | NNTool Mixedne16Fp16 |
+|-----------------------|------|-------------|-------------|-------------|-------------|------------------|
+| denoiser_LSTM_Valentini.onnx | GRU  | DNS  | PESQ= STOI= | PESQ= STOI= | PESQ=1.9442 STOI=0.9091 | PESQ=1.9154 STOI=0.9064 | 
+| denoiser_GRU_dns.onnx | GRU  | DNS         | PESQ= STOI= | PESQ= STOI= | PESQ=1.7684 STOI=0.9010 | PESQ=1.7435 STOI=0.8983 | 
+| FullRankGRU.onnx      | GRU  | DNS         | PESQ= STOI= | PESQ= STOI= | PESQ=1.7684 STOI=0.9010 | PESQ=1.7435 STOI=0.8983 | 
+| FullRankLSTM.onnx     | LSTM | DNS         | PESQ= STOI= | PESQ= STOI= | PESQ=1.9442 STOI=0.9091 | PESQ=1.9154 STOI=0.9064 |
+
+1.9442384243011475
