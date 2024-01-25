@@ -8,58 +8,59 @@ from denoiser_utils import preprocessing
 from tqdm import tqdm
 
 
-def single_audio_inference(G: NNGraph, stft_frame_i_T, stats_collector: ActivationRangesCollector = None, quant_exec=False, disable_tqdm=False):
-    stft_frame_o_T = np.empty_like(stft_frame_i_T)
-    rnn_nodes = [node for node in G.nodes(node_classes=RNNNodeBase, sort=True)]
-    rnn_states = []
-    for rnn_node in rnn_nodes:
-        rnn_states.append(np.zeros(rnn_node.out_dims[0].size()))
-        if isinstance(rnn_node, LSTMNode):
-            rnn_states.append(np.zeros(rnn_node.out_dims[0].size()))
+def single_audio_inference(
+        G: NNGraph,
+        in_features_frames,
+        stats_collector: ActivationRangesCollector = None,
+        quant_exec=False,
+        disable_tqdm=False,
+        states_idxs=None,
+        output_idx="output_1"
+    ):
 
-    len_seq = stft_frame_i_T.shape[0]
+    if isinstance(output_idx, str):
+        out_idx = G[output_idx].step_idx
+    elif isinstance(output_idx, int):
+        out_idx = output_idx
+    else:
+        raise ValueError("output_idx must be integer or string or None")
 
-    #init lstm to zeros
-    stft_mask = np.zeros(257)
-    for i in tqdm(range(len_seq), disable=disable_tqdm):
-        stft_clip = stft_frame_i_T[i]
-        stft_clip_mag = np.abs(stft_clip)
+    if states_idxs is None:
+        raise ValueError("You need to provide states indexes")
+    nn_states = [np.zeros(G[s].out_dims[so].shape) for s, so in states_idxs]
 
-        data = [stft_clip_mag, *rnn_states]
+    masked_features = np.empty_like(in_features_frames)
+    feat_mask = np.zeros(G[out_idx].out_dims[0].shape)
+    for i, in_features in enumerate(tqdm(in_features_frames, disable=disable_tqdm)):
+        in_features_mag = np.abs(in_features)
+
+        data = [in_features_mag, *nn_states]
         outputs = G.execute(data, dequantize=quant_exec)
-
-        cnt = 0
-        for node in rnn_nodes:
-            rnn_states[cnt] = outputs[node.step_idx][0]
-            cnt += 1
-            if isinstance(node, LSTMNode):
-                rnn_states[cnt] = outputs[node.step_idx][-1]
-                cnt += 1
-
         if stats_collector:
             stats_collector.collect_stats(G, data)
 
-        new_stft_mask = outputs[G['output_1'].step_idx][0].squeeze()
+        nn_states = [outputs[s][so] for s, so in states_idxs]
+        new_feat_mask = outputs[out_idx][0].squeeze()
         # See how the mask changes over time
-        # EUCLIDEAN_DISTANCES.append(np.linalg.norm(new_stft_mask - stft_mask))
-        # masks.append( new_stft_mask)
-        stft_mask = new_stft_mask
+        # EUCLIDEAN_DISTANCES.append(np.linalg.norm(new_feat_mask - feat_mask))
+        # masks.append( new_feat_mask)
+        feat_mask = new_feat_mask
 
-        stft_clip = stft_clip * stft_mask
-        stft_frame_o_T[i] = stft_clip
+        in_features = in_features * feat_mask
+        masked_features[i] = in_features
 
     # fig, ax = plt.subplots()
     # ax.plot(EUCLIDEAN_DISTANCES)
     # ax.imshow(np.array(masks))
     # plt.show()
-    return stft_frame_o_T
+    return masked_features
 
-def get_astats(G: NNGraph, files):
+def get_astats(G: NNGraph, files, states_idxs):
     stats_collector = ActivationRangesCollector(use_ema=False)
     for c, filename in tqdm(enumerate(files)):
         print(f"Collecting Stats from file {c+1}/{len(files)}")
         stft = preprocessing(filename)
 
         stft_frame_i_T = np.transpose(stft) # swap the axis to select the tmestamp
-        _ = single_audio_inference(G, stft_frame_i_T, stats_collector=stats_collector, quant_exec=False)
+        _ = single_audio_inference(G, stft_frame_i_T, states_idxs=states_idxs, stats_collector=stats_collector, quant_exec=False)
     return stats_collector.stats

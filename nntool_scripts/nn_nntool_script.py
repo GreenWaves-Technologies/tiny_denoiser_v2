@@ -5,7 +5,7 @@ from glob import glob
 import argcomplete
 from denoiser_nntool_utils import get_astats
 from nntool.api import NNGraph
-from nntool.api.types import RNNNodeBase
+from nntool.api.types import RNNNodeBase, LSTMNode
 from nntool.api.utils import model_settings, quantization_options
 
 
@@ -24,6 +24,8 @@ def create_model_parser():
                         help="even if the stats pickle file exists, requantize the NN anyway")
     parser.add_argument('--quant_type', default="mixedfp16", choices=["mixedfp16", "mixedne16fp16", "fp16", "8x8_sq8", "8x8_ne16", "16x8_ne16"],
                         help="Quantization options")
+    parser.add_argument('--tensor_train', action="store_true",
+                        help="If the model is tensor train")
     # At options (mode = performance or generate_at_model)
     parser.add_argument('--tensors_dir', default="tensors",
                         help="Where nntool stores the weights/bias tensors dir (only used in generate and performance mode)")
@@ -33,7 +35,20 @@ def create_model_parser():
                         help="Flash type")
     return parser
 
-def build_nntool_graph(trained_model, quant_type, quant_dataset=None, stats_file=None, requantize=False) -> NNGraph:
+def get_states_idxs(G: NNGraph, tensor_train):
+    if tensor_train:
+        # states_idxs = [(out_node.step_idx, 0) for out_node in G.output_nodes() if out_node.name != "output_1"].sort(key=lambda x: x[0])
+        states_idxs = [(G[f"output_{h}"].step_idx, 0) for h in range(2, 6    )]
+    else:
+        rnn_nodes = [node for node in G.nodes(node_classes=RNNNodeBase, sort=True)]
+        states_idxs = []
+        for rnn_node in rnn_nodes:
+            states_idxs.append((rnn_node.step_idx, 0))
+            if isinstance(rnn_node, LSTMNode):
+                states_idxs.append((rnn_node.step_idx, -1))
+    return states_idxs
+
+def build_nntool_graph(trained_model, quant_type, quant_dataset=None, stats_file=None, requantize=False, tensor_train=False) -> NNGraph:
     print(f"Building model with {quant_type} Quantization options")
     
     print(trained_model)
@@ -60,7 +75,7 @@ def build_nntool_graph(trained_model, quant_type, quant_dataset=None, stats_file
             with open(stats_file, 'rb') as fp:
                 stats = pickle.load(fp)
         else:
-            stats = get_astats(G, quant_files)
+            stats = get_astats(G, quant_files, get_states_idxs(G, tensor_train))
             if stats_file:
                 print(f"Saving stats dictionary to {stats_file}")
                 with open(stats_file, 'wb') as fp:
@@ -101,16 +116,22 @@ def build_nntool_graph(trained_model, quant_type, quant_dataset=None, stats_file
             node_options=node_opts
         )
 
-    for rnn_node in G.nodes(RNNNodeBase):
-        rnn_node.set_states_as_inputs(G)
-    return G
+    if not tensor_train:
+        for rnn_node in G.nodes(RNNNodeBase):
+            rnn_node.set_states_as_inputs(G)
+
+    states_idxs = get_states_idxs(G, tensor_train)
+    print("After quantization and fusion states output identified as:")
+    for state_idx in states_idxs:
+        print(f"Node {G[state_idx[0]].name} ({state_idx[0]}) output {state_idx[1]}")
+    return G, states_idxs
 
 if __name__ == '__main__':
     parser = create_model_parser()
     argcomplete.autocomplete(parser)
     args = parser.parse_args()
 
-    G = build_nntool_graph(
+    G, _ = build_nntool_graph(
         args.trained_model,
         args.quant_type,
         quant_dataset=args.quant_dataset,

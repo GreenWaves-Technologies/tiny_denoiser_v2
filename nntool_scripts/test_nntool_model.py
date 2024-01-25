@@ -32,6 +32,8 @@ def extend_parser_for_test(main_parser: argparse.ArgumentParser):
                              help="slect correct names for dns dataset")
     main_parser.add_argument('--verbose', action="store_true",
                              help="run the inference and print pesq/stoi for every file")
+    main_parser.add_argument('--draw', action="store_true",
+                             help="Draw the prepared graph")
     return main_parser
 
 
@@ -51,17 +53,25 @@ if __name__ == '__main__':
     argcomplete.autocomplete(parser)
     args = parser.parse_args()
 
-    G = build_nntool_graph(
+    G, states_idxs = build_nntool_graph(
         args.trained_model,
         args.quant_type,
         quant_dataset=args.quant_dataset,
         stats_file=args.stats_pickle,
-        requantize=args.requantize
+        requantize=args.requantize,
+        tensor_train=args.tensor_train
     )
+    if args.draw:
+        G.draw()
 
     if args.mode == "test_sample":
         stft = preprocessing(args.test_sample).T
-        stft_out = single_audio_inference(G, stft, quant_exec=not args.float_exec_test)
+        stft_out = single_audio_inference(
+            G,
+            stft,
+            states_idxs=states_idxs,
+            quant_exec=not args.float_exec_test,
+        )
         estimate = postprocessing(stft_out.T)
 
         if args.clean_test_sample:
@@ -78,12 +88,16 @@ if __name__ == '__main__':
         stoi = 0
         for c, filename in enumerate(tqdm(files)):
             noisy_file = os.path.join(args.noisy_dataset, filename)
-            stft = preprocessing(noisy_file)
-
-            stft_frame_i_T = np.transpose(stft) # swap the axis to select the tmestamp
-            stft_frame_o_T = single_audio_inference(G, stft_frame_i_T, quant_exec=not args.float_exec_test, stats_collector=None, disable_tqdm=True)
-
-            estimate = postprocessing(stft_frame_o_T.T)
+            stft = preprocessing(noisy_file).T
+            stft_out = single_audio_inference(
+                G,
+                stft,
+                states_idxs=states_idxs,
+                quant_exec=not args.float_exec_test,
+                stats_collector=None,
+                disable_tqdm=True
+            )
+            estimate = postprocessing(stft_out.T)
 
             # compute the metrics
             if args.dns_dataset:

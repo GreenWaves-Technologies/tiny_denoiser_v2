@@ -68,9 +68,8 @@ python nntool_scripts/test_nntool_model.py --mode test_dataset --trained_model m
 [valentini]: https://datashare.ed.ac.uk/handle/10283/2791
 
 Results:
-| Path                  | Type | Trained on  | Pytorch     | NNTool fp32 | NNTool fp16 | NNTool Mixedne16Fp16 |
-|-----------------------|------|-------------|-------------|-------------|-------------|------------------|
-| denoiser_LSTM_Valentini.onnx | GRU  | DNS  | PESQ= STOI= | PESQ= STOI= | PESQ=1.9442 STOI=0.9091 | PESQ=1.9154 STOI=0.9064 | 
-| denoiser_GRU_dns.onnx | GRU  | DNS         | PESQ= STOI= | PESQ= STOI= | PESQ=1.7684 STOI=0.9010 | PESQ=1.7435 STOI=0.8983 | 
-| FullRankGRU.onnx      | GRU  | DNS         | PESQ= STOI= | PESQ= STOI= | PESQ=1.7684 STOI=0.9010 | PESQ=1.7435 STOI=0.8983 | 
-| FullRankLSTM.onnx     | LSTM | DNS         | PESQ= STOI= | PESQ= STOI= | PESQ=1.9442 STOI=0.9091 | PESQ=1.9154 STOI=0.9064 |
+| Path                         | Type        | Trained on  | Pytorch                 | NNTool fp32             | NNTool fp16             | NNTool Mixedne16Fp16    |
+|------------------------------|-------------|-------------|-------------------------|-------------------------|-------------------------|-------------------------|
+| denoiser_LSTM_Valentini.onnx | LSTM        | DNS         | PESQ=       STOI=       | PESQ=1.9473 STOI=0.9091 | PESQ=1.9442 STOI=0.9091 | PESQ=1.9154 STOI=0.9064 | 
+| denoiser_GRU_dns.onnx        | GRU         | DNS         | PESQ=       STOI=       | PESQ=1.7700 STOI=0.9007 | PESQ=1.7684 STOI=0.9010 | PESQ=1.7435 STOI=0.8983 | 
+| tt_denoiser_rank_80.onnx     | LSTM TT R80 | DNS         | PESQ=       STOI=       | PESQ=2.0409 STOI=0.8877 | PESQ=2.1298 STOI=0.8826 |                         | 

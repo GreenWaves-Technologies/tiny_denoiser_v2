@@ -23,7 +23,7 @@ if __name__ == '__main__':
     argcomplete.autocomplete(parser)
     args = parser.parse_args()
 
-    G = build_nntool_graph(
+    G, states_idx = build_nntool_graph(
         args.trained_model,
         args.quant_type,
         quant_dataset=args.quant_dataset,
