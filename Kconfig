@@ -66,9 +66,23 @@ menu "DENOISER APP menu"
 
     endchoice
 
-    config GRU
-        bool "Use GRU model based (otherwise: LSTM)"
-        default y
+    choice MODEL_TYPE
+        prompt  "Select Model"
+        default GRU_DNS 
+
+        config GRU_DNS
+            bool "GRU trained on DNS"
+        config GRU_VALENTINI
+            bool "GRU trained on Valentini"
+        config LSTM_VALENTINI
+            bool "LSTM trained on Valentini"
+        config CONFIG_NEW_LSTM_DNS
+            bool "New LSTM trained on DNS"
+        config NEW_GRU_DNS
+            bool "New GRU trained on DNS"
+        config NEW_GRU_DNS_TT_RANK_2
+            bool "New GRU trained on DNS with Tensor Train Rank Reduction to rank 2"
+    endchoice
 
 endmenu
 source "$(GAP_SDK_HOME)/utils/kconfig/Kconfig"

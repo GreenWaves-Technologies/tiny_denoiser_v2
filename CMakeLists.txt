@@ -60,17 +60,27 @@ else()
   set(FLASH_TYPE mram)
 endif()
 
-# set(CONFIG_MODEL_DNS y)
-# if (${CONFIG_MODEL_DNS})
-#   set(TRAINED_ONNX      ${CMAKE_CURRENT_SOURCE_DIR}/model/denoiser_dns.onnx)
-#   set(GRU_FLAG -DGRU)
-# elseif (${CONFIG_MODEL_LSTM})
-#   set(TRAINED_ONNX      ${CMAKE_CURRENT_SOURCE_DIR}/model/denoiser.onnx)
-# else()
-  set(TRAINED_ONNX      ${CMAKE_CURRENT_SOURCE_DIR}/model/tt_denoiser_rank_2.onnx)
-  #set(TRAINED_ONNX      ${CMAKE_CURRENT_SOURCE_DIR}/model/FullRankGRU.onnx)
-  #set(GRU_FLAG -DGRU)
-# endif()
+
+if (${CONFIG_GRU_DNS})
+  set(TRAINED_ONNX      ${CMAKE_CURRENT_SOURCE_DIR}/model/denoiser_GRU_dns.onnx)
+  set(GRU_FLAG -DGRU)
+elseif(${CONFIG_GRU_VALENTINI})
+  set(TRAINED_ONNX      ${CMAKE_CURRENT_SOURCE_DIR}/model/denoiser_GRU_Valentini.onnx)
+  set(GRU_FLAG -DGRU)
+elseif(${CONFIG_LSTM_VALENTINI})
+  set(TRAINED_ONNX      ${CMAKE_CURRENT_SOURCE_DIR}/model/denoiser_LSTM_Valentini.onnx)
+elseif(${CONFIG_NEW_LSTM_DNS})
+  set(TRAINED_ONNX      ${CMAKE_CURRENT_SOURCE_DIR}/model/FullRankLSTM.onnx)
+  set(GRU_FLAG -DGRU)
+  elseif(${CONFIG_NEW_GRU_DNS})
+  set(TRAINED_ONNX      ${CMAKE_CURRENT_SOURCE_DIR}/model/FullRankGRU.onnx)
+  set(GRU_FLAG -DGRU)
+elseif(${CONFIG_NEW_GRU_DNS_TT_RANK_2})
+  set(TRAINED_ONNX      ${CMAKE_CURRENT_SOURCE_DIR}/model/tensor_train/tt_denoiser_rank_2.onnx)
+  set(TT_FLAG -DTT)
+else()
+  message(ERROR "${APP_MSG_PREFIX} Model selection went wrong!")
+endif()
 
 message(STATUS "${APP_MSG_PREFIX} Using ${TRAINED_ONNX} model")
 
@@ -272,6 +282,7 @@ list(APPEND TARGET_PREPROCESSOR -DPERF
                                 -DN_FFT=${FRAME_NFFT}
                                 ${QUANT_FLAG}
                                 ${GRU_FLAG}
+                                ${TT_FLAG}
 )
 
 project(${TARGET_NAME} C ASM)
