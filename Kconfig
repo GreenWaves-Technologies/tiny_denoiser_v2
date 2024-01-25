@@ -76,7 +76,7 @@ menu "DENOISER APP menu"
             bool "GRU trained on Valentini"
         config LSTM_VALENTINI
             bool "LSTM trained on Valentini"
-        config CONFIG_NEW_LSTM_DNS
+        config NEW_LSTM_DNS
             bool "New LSTM trained on DNS"
         config NEW_GRU_DNS
             bool "New GRU trained on DNS"

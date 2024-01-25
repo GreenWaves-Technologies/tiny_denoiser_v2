@@ -35,7 +35,9 @@ def create_model_parser():
 
 def build_nntool_graph(trained_model, quant_type, quant_dataset=None, stats_file=None, requantize=False) -> NNGraph:
     print(f"Building model with {quant_type} Quantization options")
-
+    
+    print(trained_model)
+    
     G = NNGraph.load_graph(trained_model, old_dsp_lib=False)
     G.name = "tinydenoiser"
     G.adjust_order()
@@ -116,8 +118,8 @@ if __name__ == '__main__':
         requantize=args.requantize
     )
 
-    G.draw(view=False, filepath="graph")
-    G.draw(view=False, filepath="graph_q", quant_labels=True)
+    #G.draw(view=False, filepath="graph")
+    #G.draw(view=False, filepath="graph_q", quant_labels=True)
 
     G.gen_at_model(
         write_constants=True,

@@ -10,7 +10,7 @@ def create_parser():
     parser = argparse.ArgumentParser(prog='nntool_script')
 
     # Model options
-    parser.add_argument('--trained_model', default="model/denoiser.onnx",
+    parser.add_argument('--trained_model', default="model/denoiser_GRU_dns.onnx",
                         help="Path to the trained tflite/onnx")
     parser.add_argument('--quant_dataset', default="dataset/quant/*",
                         help="path to .wav files to use to quantize the network")
