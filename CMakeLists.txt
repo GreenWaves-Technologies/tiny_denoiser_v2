@@ -160,6 +160,7 @@ autotiler_add_model(
 set(NN_DIR  ${CMAKE_BINARY_DIR}/BUILD_MODEL_NN)
 set(NN_AT_MODEL_PATH      ${NN_DIR}/tinydenoiserModel.c)
 set(NN_AT_TENSORS_DIR     ${NN_DIR}/tensors)
+set(NN_EXPRESSION_KERNELS ${NN_DIR}/NN_Expression_Kernels.c)
 autotiler_add_model(
   TARGET_NAME "tinydenoiser"
   MODEL_PATH ${NN_AT_MODEL_PATH}
@@ -200,7 +201,7 @@ add_custom_target(clean_fft_model
 )
 
 add_custom_command(
-  OUTPUT ${NN_AT_MODEL_PATH} ${NN_AT_TENSORS_DIR}
+  OUTPUT ${NN_AT_MODEL_PATH} ${NN_AT_TENSORS_DIR} ${NN_EXPRESSION_KERNELS}
   COMMENT "Generate the autotiler model: ${NN_AT_MODEL_PATH}"
   DEPENDS ${NN_NNTOOL_SCRIPT}
   COMMAND python3 ${NN_NNTOOL_SCRIPT} --trained_model=${TRAINED_ONNX}
@@ -237,7 +238,6 @@ list(APPEND TARGET_SRCS ${MAIN}
                         ${SFU_KERNEL_C}
                         $ENV{SFU_RUNTIME}/SFU_RT.c
                         ${CMAKE_BINARY_DIR}/SFUGraph_L2_Descr.c
-                        ${COMMON_MODEL_BUILDDIR}/NN_Expression_Kernels.c
 )
 
 list(APPEND TARGET_INCS -I$ENV{GAP_H_INC}
