@@ -74,5 +74,3 @@ Results:
 | denoiser_GRU_dns.onnx | GRU  | DNS         | PESQ= STOI= | PESQ= STOI= | PESQ=1.7684 STOI=0.9010 | PESQ=1.7435 STOI=0.8983 | 
 | FullRankGRU.onnx      | GRU  | DNS         | PESQ= STOI= | PESQ= STOI= | PESQ=1.7684 STOI=0.9010 | PESQ=1.7435 STOI=0.8983 | 
 | FullRankLSTM.onnx     | LSTM | DNS         | PESQ= STOI= | PESQ= STOI= | PESQ=1.9442 STOI=0.9091 | PESQ=1.9154 STOI=0.9064 |
-
-1.9442384243011475
