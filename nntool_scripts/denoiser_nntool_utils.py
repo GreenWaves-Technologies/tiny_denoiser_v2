@@ -28,7 +28,7 @@ def single_audio_inference(
     if states_idxs is None:
         raise ValueError("You need to provide states indexes")
     nn_states = [np.zeros(G[s].out_dims[so].shape) for s, so in states_idxs]
-
+    
     masked_features = np.empty_like(in_features_frames)
     feat_mask = np.zeros(G[out_idx].out_dims[0].shape)
     for i, in_features in enumerate(tqdm(in_features_frames, disable=disable_tqdm)):

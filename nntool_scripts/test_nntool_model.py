@@ -122,5 +122,5 @@ if __name__ == '__main__':
                 sf.write(output_file, estimate, 16000)
 
         print(f"Result of accuracy on the ({len(files)} samples):")
-        print(f"PESQ: {pesq / len(files)}")
-        print(f"STOI: {stoi / len(files)}")
+        print(f"PESQ: {np.round(pesq / len(files),4)}")
+        print(f"STOI: {np.round(stoi / len(files),4)}")

@@ -82,6 +82,16 @@ menu "DENOISER APP menu"
             bool "New GRU trained on DNS"
         config NEW_GRU_DNS_TT_RANK_2
             bool "New GRU trained on DNS with Tensor Train Rank Reduction to rank 2"
+        config NEW_GRU_DNS_TT_RANK_4
+            bool "New GRU trained on DNS with Tensor Train Rank Reduction to rank 4"
+        config NEW_GRU_DNS_TT_RANK_8
+            bool "New GRU trained on DNS with Tensor Train Rank Reduction to rank 8"
+        config NEW_GRU_DNS_TT_RANK_16
+            bool "New GRU trained on DNS with Tensor Train Rank Reduction to rank 16"
+        config NEW_GRU_DNS_TT_RANK_48
+            bool "New GRU trained on DNS with Tensor Train Rank Reduction to rank 48"
+        config NEW_GRU_DNS_TT_RANK_80
+            bool "New GRU trained on DNS with Tensor Train Rank Reduction to rank 80"
     endchoice
 
 endmenu

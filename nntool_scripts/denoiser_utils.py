@@ -1,5 +1,6 @@
 
 import librosa
+import numpy as np
 from pesq import pesq
 from pystoi import stoi
 
@@ -22,11 +23,18 @@ def preprocessing(input_file, frame_size=400, frame_step=100, n_fft=512, win_fun
         data = open_wav(input_file)
     else:
         data = input_file
+    
     stft = librosa.stft(data, win_length=frame_size, n_fft=n_fft, hop_length=frame_step, window=win_func, center=False)
+    
     return stft
 
 def postprocessing(stfts, frame_size=400, frame_step=100, n_fft=512, win_func="hann"):
+    #Pad the STFT otherwise last samples get corrupted
+    pad = np.zeros((257,3))
+    stfts = np.concatenate((stfts,pad),axis=1)
     data = librosa.istft(stfts, win_length=frame_size, n_fft=n_fft, hop_length=frame_step, window=win_func, center=False)
+    #Remove the pad 
+    data = data[:-(HOP_LENGTH*3)]
     return data
 
 def get_pesq(ref_sig, out_sig, sr):

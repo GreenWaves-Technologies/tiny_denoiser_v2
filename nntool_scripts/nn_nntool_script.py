@@ -121,9 +121,9 @@ def build_nntool_graph(trained_model, quant_type, quant_dataset=None, stats_file
             rnn_node.set_states_as_inputs(G)
 
     states_idxs = get_states_idxs(G, tensor_train)
-    print("After quantization and fusion states output identified as:")
-    for state_idx in states_idxs:
-        print(f"Node {G[state_idx[0]].name} ({state_idx[0]}) output {state_idx[1]}")
+    #print("After quantization and fusion states output identified as:")
+    #for state_idx in states_idxs:
+    #    print(f"Node {G[state_idx[0]].name} ({state_idx[0]}) output {state_idx[1]}")
     return G, states_idxs
 
 if __name__ == '__main__':
