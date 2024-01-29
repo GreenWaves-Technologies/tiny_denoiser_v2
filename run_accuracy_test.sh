@@ -1,143 +1,32 @@
-echo "####################"
-echo " denoiser_LSTM_Valetini  "
-echo " float_exec_test         "
-echo "####################"
-python nntool_scripts/test_nntool_model.py --mode test_dataset --trained_model model/denoiser_LSTM_Valetini.onnx --quant_type fp16 --noisy_dataset dataset/test/noisy/ --clean_dataset dataset/test/clean/ --float_exec_test
-echo "####################"
-echo " denoiser_LSTM_Valetini  "
-echo " fp16         "
-echo "####################"
-python nntool_scripts/test_nntool_model.py --mode test_dataset --trained_model model/denoiser_LSTM_Valetini.onnx --quant_type fp16 --noisy_dataset dataset/test/noisy/ --clean_dataset dataset/test/clean/ 
-echo "####################"
-echo " denoiser_LSTM_Valetini  "
-echo " mixedfp16         "
-echo "####################"
-python nntool_scripts/test_nntool_model.py --mode test_dataset --trained_model model/denoiser_LSTM_Valetini.onnx --quant_type mixedfp16 --noisy_dataset dataset/test/noisy/ --clean_dataset dataset/test/clean/ 
-echo "####################"
-echo " denoiser_LSTM_Valetini  "
-echo " mixedne16fp16         "
-echo "####################"
-python nntool_scripts/test_nntool_model.py --mode test_dataset --trained_model model/denoiser_LSTM_Valetini.onnx --quant_type mixedne16fp16 --noisy_dataset dataset/test/noisy/ --clean_dataset dataset/test/clean/ 
+#!/bin/bash
 
+nn_name=( "denoiser_LSTM_Valetini" "tt_denoiser_rank_80" "tt_denoiser_rank_48" "tt_denoiser_rank_16" "tt_denoiser_rank_8" "tt_denoiser_rank_4" "tt_denoiser_rank_2" "denoiser_GRU_dns")
+quant_type=( "fp32" "fp16" "mixedfp16" "mixedne16fp16" )
 
-echo "####################"
-echo " denoiser_GRU_dns.onnx  "
-echo " float_exec_test         "
-echo "####################"
-python nntool_scripts/test_nntool_model.py --mode test_dataset --trained_model model/denoiser_GRU_dns.onnx.onnx --quant_type fp16 --noisy_dataset dataset/test/noisy/ --clean_dataset dataset/test/clean/ --float_exec_test
-echo "####################"
-echo " denoiser_GRU_dns.onnx  "
-echo " fp16         "
-echo "####################"
-python nntool_scripts/test_nntool_model.py --mode test_dataset --trained_model model/denoiser_GRU_dns.onnx.onnx --quant_type fp16 --noisy_dataset dataset/test/noisy/ --clean_dataset dataset/test/clean/ 
-echo "####################"
-echo " denoiser_GRU_dns.onnx  "
-echo " mixedfp16         "
-echo "####################"
-python nntool_scripts/test_nntool_model.py --mode test_dataset --trained_model model/denoiser_GRU_dns.onnx.onnx --quant_type mixedfp16 --noisy_dataset dataset/test/noisy/ --clean_dataset dataset/test/clean/ 
-echo "####################"
-echo " denoiser_GRU_dns.onnx  "
-echo " mixedne16fp16         "
-echo "####################"
-python nntool_scripts/test_nntool_model.py --mode test_dataset --trained_model model/denoiser_GRU_dns.onnx.onnx --quant_type mixedne16fp16 --noisy_dataset dataset/test/noisy/ --clean_dataset dataset/test/clean/ 
+for model_name in "${nn_name[@]}"
+do
+	echo "$model_name"
+    for quant in "${quant_type[@]}"
+    do
+        echo "$quant"
+        fp_32_arg=""
+        quant_type_arg=""
+        if [ $quant = "fp32" ]; then
+            fp_32_arg="--float_exec_test"
+            quant_type_arg="fp16"
+        else
+            quant_type_arg=$quant
+        fi
+        tt_arg=""
+        model_arg=""
+        if [[ $model_name = tt* ]]; then
+            tt_arg="--tensor_train"
+            model_arg="model/tensor_train/$model_name.onnx"
+        else
+            model_arg="model/$model_name.onnx"
+        fi
 
-
-
-echo "####################"
-echo " tt_denoiser_rank_2  "
-echo " float_exec_test         "
-echo "####################"
-python nntool_scripts/test_nntool_model.py --mode test_dataset --trained_model model/tensor_train/tt_denoiser_rank_2.onnx --quant_type fp16 --noisy_dataset dataset/test/noisy/ --clean_dataset dataset/test/clean/ --float_exec_test --tensor_train
-echo "####################"
-echo " tt_denoiser_rank_2  "
-echo " fp16         "
-echo "####################"
-python nntool_scripts/test_nntool_model.py --mode test_dataset --trained_model model/tensor_train/tt_denoiser_rank_2.onnx --quant_type fp16 --noisy_dataset dataset/test/noisy/ --clean_dataset dataset/test/clean/ --tensor_train
-echo "####################"
-echo " tt_denoiser_rank_2  "
-echo " mixedfp16         "
-echo "####################"
-python nntool_scripts/test_nntool_model.py --mode test_dataset --trained_model model/tensor_train/tt_denoiser_rank_2.onnx --quant_type mixedfp16 --noisy_dataset dataset/test/noisy/ --clean_dataset dataset/test/clean/ --tensor_train
-
-echo "####################"
-echo " tt_denoiser_rank_4  "
-echo " float_exec_test         "
-echo "####################"
-python nntool_scripts/test_nntool_model.py --mode test_dataset --trained_model model/tensor_train/tt_denoiser_rank_4.onnx --quant_type fp16 --noisy_dataset dataset/test/noisy/ --clean_dataset dataset/test/clean/ --float_exec_test --tensor_train
-echo "####################"
-echo " tt_denoiser_rank_4  "
-echo " fp16         "
-echo "####################"
-python nntool_scripts/test_nntool_model.py --mode test_dataset --trained_model model/tensor_train/tt_denoiser_rank_4.onnx --quant_type fp16 --noisy_dataset dataset/test/noisy/ --clean_dataset dataset/test/clean/ --tensor_train
-echo "####################"
-echo " tt_denoiser_rank_4  "
-echo " mixedfp16         "
-echo "####################"
-python nntool_scripts/test_nntool_model.py --mode test_dataset --trained_model model/tensor_train/tt_denoiser_rank_4.onnx --quant_type mixedfp16 --noisy_dataset dataset/test/noisy/ --clean_dataset dataset/test/clean/ --tensor_train
-
-
-echo "####################"
-echo " tt_denoiser_rank_8  "
-echo " float_exec_test         "
-echo "####################"
-python nntool_scripts/test_nntool_model.py --mode test_dataset --trained_model model/tensor_train/tt_denoiser_rank_8.onnx --quant_type fp16 --noisy_dataset dataset/test/noisy/ --clean_dataset dataset/test/clean/ --float_exec_test --tensor_train
-echo "####################"
-echo " tt_denoiser_rank_8  "
-echo " fp16         "
-echo "####################"
-python nntool_scripts/test_nntool_model.py --mode test_dataset --trained_model model/tensor_train/tt_denoiser_rank_8.onnx --quant_type fp16 --noisy_dataset dataset/test/noisy/ --clean_dataset dataset/test/clean/ --tensor_train
-echo "####################"
-echo " tt_denoiser_rank_8  "
-echo " mixedfp16         "
-echo "####################"
-python nntool_scripts/test_nntool_model.py --mode test_dataset --trained_model model/tensor_train/tt_denoiser_rank_8.onnx --quant_type mixedfp16 --noisy_dataset dataset/test/noisy/ --clean_dataset dataset/test/clean/ --tensor_train
-
-
-echo "####################"
-echo " tt_denoiser_rank_16  "
-echo " float_exec_test         "
-echo "####################"
-python nntool_scripts/test_nntool_model.py --mode test_dataset --trained_model model/tensor_train/tt_denoiser_rank_16.onnx --quant_type fp16 --noisy_dataset dataset/test/noisy/ --clean_dataset dataset/test/clean/ --float_exec_test --tensor_train
-echo "####################"
-echo " tt_denoiser_rank_16  "
-echo " fp16         "
-echo "####################"
-python nntool_scripts/test_nntool_model.py --mode test_dataset --trained_model model/tensor_train/tt_denoiser_rank_16.onnx --quant_type fp16 --noisy_dataset dataset/test/noisy/ --clean_dataset dataset/test/clean/ --tensor_train
-echo "####################"
-echo " tt_denoiser_rank_16  "
-echo " mixedfp16         "
-echo "####################"
-python nntool_scripts/test_nntool_model.py --mode test_dataset --trained_model model/tensor_train/tt_denoiser_rank_16.onnx --quant_type mixedfp16 --noisy_dataset dataset/test/noisy/ --clean_dataset dataset/test/clean/ --tensor_train
-
-echo "####################"
-echo " tt_denoiser_rank_48  "
-echo " float_exec_test         "
-echo "####################"
-python nntool_scripts/test_nntool_model.py --mode test_dataset --trained_model model/tensor_train/tt_denoiser_rank_48.onnx --quant_type fp16 --noisy_dataset dataset/test/noisy/ --clean_dataset dataset/test/clean/ --float_exec_test --tensor_train
-echo "####################"
-echo " tt_denoiser_rank_48  "
-echo " fp16         "
-echo "####################"
-python nntool_scripts/test_nntool_model.py --mode test_dataset --trained_model model/tensor_train/tt_denoiser_rank_48.onnx --quant_type fp16 --noisy_dataset dataset/test/noisy/ --clean_dataset dataset/test/clean/ --tensor_train
-echo "####################"
-echo " tt_denoiser_rank_48  "
-echo " mixedfp16         "
-echo "####################"
-python nntool_scripts/test_nntool_model.py --mode test_dataset --trained_model model/tensor_train/tt_denoiser_rank_48.onnx --quant_type mixedfp16 --noisy_dataset dataset/test/noisy/ --clean_dataset dataset/test/clean/ --tensor_train
-
-
-echo "####################"
-echo " tt_denoiser_rank_80  "
-echo " float_exec_test         "
-echo "####################"
-python nntool_scripts/test_nntool_model.py --mode test_dataset --trained_model model/tensor_train/tt_denoiser_rank_80.onnx --quant_type fp16 --noisy_dataset dataset/test/noisy/ --clean_dataset dataset/test/clean/ --float_exec_test --tensor_train
-echo "####################"
-echo " tt_denoiser_rank_80  "
-echo " fp16         "
-echo "####################"
-python nntool_scripts/test_nntool_model.py --mode test_dataset --trained_model model/tensor_train/tt_denoiser_rank_80.onnx --quant_type fp16 --noisy_dataset dataset/test/noisy/ --clean_dataset dataset/test/clean/ --tensor_train
-echo "####################"
-echo " tt_denoiser_rank_80  "
-echo " mixedfp16         "
-echo "####################"
-python nntool_scripts/test_nntool_model.py --mode test_dataset --trained_model model/tensor_train/tt_denoiser_rank_80.onnx --quant_type mixedfp16 --noisy_dataset dataset/test/noisy/ --clean_dataset dataset/test/clean/ --tensor_train
+        output=$(python nntool_scripts/test_nntool_model.py --mode test_dataset --trained_model ${model_arg} --quant_type ${quant_type_arg} --noisy_dataset dataset/test/noisy/ --clean_dataset dataset/test/clean/ ${fp_32_arg} ${tt_arg} 2>&1)
+        echo $output
+    done
+done

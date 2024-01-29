@@ -113,8 +113,8 @@ if __name__ == '__main__':
 
             pesq += pesq_i
             stoi += stoi_i
-            if ((c+1) % 10) == 0:
-                print(f"After {c+1} files: PESQ={pesq/(c+1):.4f} STOI={stoi/(c+1):.4f}")
+            #if ((c+1) % 10) == 0:
+            #    print(f"After {c+1} files: PESQ={pesq/(c+1):.4f} STOI={stoi/(c+1):.4f}")
 
             if args.output_dataset:
                 output_file = os.path.join(args.output_dataset, filename)

@@ -69,7 +69,7 @@ def build_nntool_graph(trained_model, quant_type, quant_dataset=None, stats_file
         if len(quant_files) < 1:
             raise ValueError("Provide quant_dataset")
         if stats_file is None:
-            stats_file = f"/tmp/{os.path.splitext(os.path.split(trained_model)[-1])[0]}.pickle"
+            stats_file = f"/tmp/{os.path.splitext(os.path.split(trained_model)[-1])[0]}_{quant_type}.pickle"
         if stats_file and os.path.exists(stats_file) and not requantize:
             print(f"Loading stats dictionary from {stats_file}")
             with open(stats_file, 'rb') as fp:

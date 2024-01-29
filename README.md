@@ -70,11 +70,13 @@ python nntool_scripts/test_nntool_model.py --mode test_dataset --trained_model m
 Results:
 | Path                         | Type        | Trained on  | Pytorch                 | NNTool fp32             | NNTool fp16             | NNTool MixedFp16        | NNTool Mixedne16Fp16    |
 |------------------------------|-------------|-------------|-------------------------|-------------------------|-------------------------|-------------------------|-------------------------|
-| denoiser_LSTM_Valentini.onnx | LSTM        | DNS         | PESQ=       STOI=       | PESQ=2.2189 STOI=0.9091 | PESQ=2.2175 STOI=0.9091 | PESQ=2.1887 STOI=0.9054 | PESQ=2.2196 STOI=0.9064 |
-| denoiser_GRU_dns.onnx        | GRU         | DNS         | PESQ=       STOI=       | PESQ=XXXXXX STOI=XXXXXX | PESQ=XXXXXX STOI=XXXXXX | PESQ=XXXXXX STOI=XXXXXX | 
-| tt_denoiser_rank_2.onnx      | LSTM TT R2  | DNS         | PESQ=       STOI=       | PESQ=2.3431 STOI=0.8822 | PESQ=2.3414 STOI=0.8796 | PESQ=2.2362 STOI=0.8874 | 
-| tt_denoiser_rank_4.onnx      | LSTM TT R2  | DNS         | PESQ=       STOI=       | PESQ=2.2942 STOI=0.8831 | PESQ=2.2866 STOI=0.8831 | PESQ= STOI= | 
-| tt_denoiser_rank_8.onnx      | LSTM TT R2  | DNS         | PESQ=       STOI=       | PESQ=2.5557 STOI=0.8925 | PESQ=2.5539 STOI=0.8917 | PESQ= STOI= | 
-| tt_denoiser_rank_16.onnx     | LSTM TT R2  | DNS         | PESQ=       STOI=       | PESQ=2.4287 STOI=0.8914 | PESQ=2.4137 STOI=0.8908 | PESQ= STOI= | 
-| tt_denoiser_rank_48.onnx     | LSTM TT R2  | DNS         | PESQ=       STOI=       | PESQ=2.2710 STOI=0.8893 | PESQ=2.2712 STOI=0.8881 | PESQ= STOI= | 
-| tt_denoiser_rank_80.onnx     | LSTM TT R80 | DNS         | PESQ=       STOI=       | PESQ=2.5511 STOI=0.8878 | PESQ=2.5961 STOI=0.8825 | PESQ= STOI= | 
+| denoiser_LSTM_Valentini.onnx | LSTM        | Valentini   | PESQ=       STOI=       | PESQ=2.2189 STOI=0.9091 | PESQ=2.2175 STOI=0.9091 | PESQ=2.1887 STOI=0.9054 | PESQ=2.2196 STOI=0.9064 |
+| denoiser_GRU_dns.onnx        | GRU         | DNS         | PESQ=       STOI=       | PESQ=2.0486 STOI=0.9007 | PESQ=2.0468 STOI=0.9010 | PESQ=1.9590 STOI=0.8922 | PESQ=2.0158 STOI=0.8983 |
+| tt_denoiser_rank_80.onnx     | LSTM TT R80 | DNS         | PESQ=       STOI=       | PESQ=2.5511 STOI=0.8878 | PESQ=2.5961 STOI=0.8825 | PESQ=2.4559 STOI=0.8908 | PESQ= STOI=             |
+| tt_denoiser_rank_48.onnx     | LSTM TT R48 | DNS         | PESQ=       STOI=       | PESQ=2.2710 STOI=0.8893 | PESQ=2.2712 STOI=0.8881 | PESQ=1.8841 STOI=0.8917 | PESQ=1.9436 STOI=0.8913 |
+| tt_denoiser_rank_16.onnx     | LSTM TT R16 | DNS         | PESQ=       STOI=       | PESQ=2.4287 STOI=0.8914 | PESQ=2.4137 STOI=0.8908 | PESQ=2.2953 STOI=0.8901 | PESQ=2.2886 STOI=0.8962|
+| tt_denoiser_rank_8.onnx      | LSTM TT R8  | DNS         | PESQ=       STOI=       | PESQ=2.5557 STOI=0.8925 | PESQ=2.5539 STOI=0.8917 | PESQ=2.3030 STOI=0.8904 | PESQ=2.3674 STOI=0.8992 |
+| tt_denoiser_rank_4.onnx      | LSTM TT R4  | DNS         | PESQ=       STOI=       | PESQ=2.2942 STOI=0.8831 | PESQ=2.2866 STOI=0.8831 | PESQ=2.1710 STOI=0.8915 | PESQ=2.2079 STOI=0.8904 |
+| tt_denoiser_rank_2.onnx      | LSTM TT R2  | DNS         | PESQ=       STOI=       | PESQ=2.3431 STOI=0.8822 | PESQ=2.3414 STOI=0.8796 | PESQ=2.2362 STOI=0.8874 | PESQ=2.2737 STOI=0.8864 |
+
+

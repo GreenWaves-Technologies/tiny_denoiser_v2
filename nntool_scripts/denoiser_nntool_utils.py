@@ -57,7 +57,8 @@ def single_audio_inference(
 
 def get_astats(G: NNGraph, files, states_idxs):
     stats_collector = ActivationRangesCollector(use_ema=False)
-    for c, filename in tqdm(enumerate(files)):
+    #for c, filename in tqdm(enumerate(files)):
+    for c, filename in enumerate(files):
         print(f"Collecting Stats from file {c+1}/{len(files)}")
         stft = preprocessing(filename)
 
