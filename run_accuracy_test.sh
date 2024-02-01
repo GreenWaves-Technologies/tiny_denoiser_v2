@@ -1,5 +1,9 @@
 #!/bin/bash
 
+
+
+#nn_name=( "tt_denoiser_rank_80" )
+#quant_type=( "mixedne16fp16" )
 nn_name=( "denoiser_LSTM_Valetini" "tt_denoiser_rank_80" "tt_denoiser_rank_48" "tt_denoiser_rank_16" "tt_denoiser_rank_8" "tt_denoiser_rank_4" "tt_denoiser_rank_2" "denoiser_GRU_dns")
 quant_type=( "fp32" "fp16" "mixedfp16" "mixedne16fp16" )
 
@@ -26,6 +30,7 @@ do
             model_arg="model/$model_name.onnx"
         fi
 
+        #output=$(python nntool_scripts/test_nntool_model.py --mode test_sample --trained_model ${model_arg} --quant_type ${quant_type_arg} --test_sample dataset/test/noisy/p232_050.wav --out_wav output_nntool_${model_name}_${quant}.wav ${fp_32_arg} ${tt_arg} 2>&1)
         output=$(python nntool_scripts/test_nntool_model.py --mode test_dataset --trained_model ${model_arg} --quant_type ${quant_type_arg} --noisy_dataset dataset/test/noisy/ --clean_dataset dataset/test/clean/ ${fp_32_arg} ${tt_arg} 2>&1)
         echo $output
     done

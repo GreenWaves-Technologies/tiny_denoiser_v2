@@ -24,17 +24,25 @@ def preprocessing(input_file, frame_size=400, frame_step=100, n_fft=512, win_fun
     else:
         data = input_file
     
+    #This is to get same size as input
+    global pad_to_remove
+    pad_to_remove = 400 - ((np.squeeze(data.shape)-512)%100)
+    pad = np.zeros((pad_to_remove),dtype=data.dtype)
+    data = np.concatenate((data,pad),axis=0)
     stft = librosa.stft(data, win_length=frame_size, n_fft=n_fft, hop_length=frame_step, window=win_func, center=False)
+    #This is to remove a strange clicking on the beginning of the output
+    pad = np.zeros((257,3))
+    stft = np.concatenate((pad,stft),axis=1)
     
     return stft
 
 def postprocessing(stfts, frame_size=400, frame_step=100, n_fft=512, win_func="hann"):
-    #Pad the STFT otherwise last samples get corrupted
-    pad = np.zeros((257,3))
-    stfts = np.concatenate((stfts,pad),axis=1)
+    
     data = librosa.istft(stfts, win_length=frame_size, n_fft=n_fft, hop_length=frame_step, window=win_func, center=False)
-    #Remove the pad 
-    data = data[:-(HOP_LENGTH*3)]
+    #remove pad for clicking
+    data = data[300:]
+    #Remove the pad for size
+    data = data[:-pad_to_remove]
     return data
 
 def get_pesq(ref_sig, out_sig, sr):

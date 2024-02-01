@@ -77,7 +77,7 @@ if __name__ == '__main__':
         if args.clean_test_sample:
             clean_data = open_wav(args.clean_test_sample)
             pesq_i, stoi_i = calculate_pesq_stoi(estimate, clean_data)
-            print(f"pesq=\t{pesq_i}\tand stoi=\t{stoi_i}")
+            print(f"pesq=\t{pesq_i}\tand stoi=\t{stoi_i}\n")
 
         sf.write(args.out_wav, estimate, 16000)
 
@@ -98,7 +98,7 @@ if __name__ == '__main__':
                 disable_tqdm=True
             )
             estimate = postprocessing(stft_out.T)
-
+            
             # compute the metrics
             if args.dns_dataset:
                 clean_filename = "clean_fileid_" + filename.split("_")[-1]
