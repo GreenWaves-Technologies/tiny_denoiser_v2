@@ -28,7 +28,7 @@ if __name__ == '__main__':
     G.adjust_order()
     G.fusions('scaled_match_group')
 
-    quant_files = glob(args.quant_dataset)[:5]
+    quant_files = glob(args.quant_dataset)[:20]
     if len(quant_files) < 1:
         raise ValueError("Provide quant_dataset")
     stats = get_astats(G, quant_files)

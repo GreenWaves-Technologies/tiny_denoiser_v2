@@ -38,7 +38,7 @@ def create_model_parser():
 def get_states_idxs(G: NNGraph, tensor_train):
     if tensor_train:
         # states_idxs = [(out_node.step_idx, 0) for out_node in G.output_nodes() if out_node.name != "output_1"].sort(key=lambda x: x[0])
-        states_idxs = [(G[f"output_{h}"].step_idx, 0) for h in range(2, 6    )]
+        states_idxs = [(G[f"output_{h}"].step_idx, 0) for h in range(2, 6)]
     else:
         rnn_nodes = [node for node in G.nodes(node_classes=RNNNodeBase, sort=True)]
         states_idxs = []
@@ -65,7 +65,7 @@ def build_nntool_graph(trained_model, quant_type, quant_dataset=None, stats_file
             )
         )
     else:
-        quant_files = glob(quant_dataset)[:5]
+        quant_files = glob(quant_dataset)[:1]
         if len(quant_files) < 1:
             raise ValueError("Provide quant_dataset")
         if stats_file is None:
@@ -84,23 +84,50 @@ def build_nntool_graph(trained_model, quant_type, quant_dataset=None, stats_file
         node_opts = None
 
         if quant_type in ["mixedfp16", "mixedne16fp16"]:
+
             quant_opts = quantization_options(clip_type="none", allow_asymmetric_out=True, force_rnn_1_minus_1_out=True, use_ne16=quant_type == "mixedne16fp16")
-            node_opts = {
-                nname: quantization_options(scheme="FLOAT", float_type="float16")
-                for nname in [
-                    "input_1",
-                    "Conv_0_reshape_in",
-                    "Conv_0_fusion",
-                    "Conv_147_fusion",
-                    "Conv_150_fusion",
-                    "Conv_150_reshape_out",
-                    "Conv_139_fusion",
-                    "Conv_142_fusion",
-                    "Conv_142_reshape_out",
-                    "Sigmoid_151",
-                    "output_1"
-                ]
-            }
+            if tensor_train:
+                    node_opts = {
+                    nname: quantization_options(scheme="FLOAT", float_type="float16")
+                    for nname in [
+                        "input_1",
+                        # "input_2",
+                        # "input_3",
+                        # "input_4",
+                        # "input_5",
+                        # "expr_0",
+                        # "expr_2", 
+                        "_fc0_Conv_fusion",
+                        "_fc0_Conv_reshape_in",
+                        "_fc0_Conv_reshape_out",
+                        "_fc1_Conv_fusion",
+                        "_fc2_Conv_fusion",
+                        "_fc2_Conv_reshape_out",
+                        "output_1"
+                        # "output_2",
+                        # "output_3",
+                        # "output_4",
+                        # "output_5"
+                    ]
+                }
+            else:
+                node_opts = {
+                    nname: quantization_options(scheme="FLOAT", float_type="float16")
+                    for nname in [
+                        "input_1",
+
+                        "Conv_0_reshape_in",
+                        "Conv_0_fusion",
+                        "Conv_147_fusion",
+                        "Conv_150_fusion",
+                        "Conv_150_reshape_out",
+                        "Conv_139_fusion",
+                        "Conv_142_fusion",
+                        "Conv_142_reshape_out",
+                        "Sigmoid_151",
+                        "output_1",
+                    ]
+                }
         elif quant_type == "8x8_sq8":
             quant_opts = quantization_options(clip_type="none", allow_asymmetric_out=True, force_rnn_1_minus_1_out=True)
 
