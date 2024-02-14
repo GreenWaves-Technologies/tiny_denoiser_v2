@@ -69,7 +69,7 @@ def build_nntool_graph(trained_model, quant_type, quant_dataset=None, stats_file
         if len(quant_files) < 1:
             raise ValueError("Provide quant_dataset")
         if stats_file is None:
-            stats_file = f"/tmp/{os.path.splitext(os.path.split(trained_model)[-1])[0]}_{quant_type}.pickle"
+            stats_file = f"/tmp/{os.path.splitext(os.path.basename(trained_model))[0]}.pickle"
         if stats_file and os.path.exists(stats_file) and not requantize:
             print(f"Loading stats dictionary from {stats_file}")
             with open(stats_file, 'rb') as fp:
@@ -87,7 +87,7 @@ def build_nntool_graph(trained_model, quant_type, quant_dataset=None, stats_file
 
             quant_opts = quantization_options(clip_type="none", allow_asymmetric_out=True, force_rnn_1_minus_1_out=True, use_ne16=quant_type == "mixedne16fp16")
             if tensor_train:
-                    node_opts = {
+                node_opts = {
                     nname: quantization_options(scheme="FLOAT", float_type="float16")
                     for nname in [
                         "input_1",

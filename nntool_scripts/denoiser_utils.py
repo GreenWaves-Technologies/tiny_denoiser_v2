@@ -1,9 +1,13 @@
 
+import os
 import librosa
 import numpy as np
 from pesq import pesq
 from pystoi import stoi
 from speechmos import dnsmos
+import pandas as pd
+
+TRACK_METRICS = ["ovrl_mos", "sig_mos", "bak_mos", "p808_mos", "pesq", "stoi", "meanerr"]
 
 WIN_LENGTH = 400
 HOP_LENGTH = 100
@@ -24,84 +28,41 @@ def preprocessing(input_file, frame_size=400, frame_step=100, n_fft=512, win_fun
         data = open_wav(input_file)
     else:
         data = input_file
-    
-    #This is to get same size as input
-    global pad_to_remove
-    pad_to_remove = 400 - ((np.squeeze(data.shape)-512)%100)
-    pad = np.zeros((pad_to_remove),dtype=data.dtype)
-    data = np.concatenate((data,pad),axis=0)
-        
-    pad = np.zeros((300),dtype=data.dtype)
-    data = np.concatenate((pad,data),axis=0)
-    stft = librosa.stft(data, win_length=frame_size, n_fft=n_fft, hop_length=frame_step, window=win_func, center=False)
-    #This is to remove a strange clicking on the beginning of the output
-    #pad = stft[:,:3]
-    #pad = np.zeros((257,3))
-    #stft = np.concatenate((pad,stft),axis=1)
-    
+
+    stft = librosa.stft(data, win_length=frame_size, n_fft=n_fft, hop_length=frame_step, window=win_func, center=True)    
     return stft
 
 def postprocessing(stfts, frame_size=400, frame_step=100, n_fft=512, win_func="hann"):
-    
-    data = librosa.istft(stfts, win_length=frame_size, n_fft=n_fft, hop_length=frame_step, window=win_func, center=False)
-    #remove pad for clicking
-    data = data[300:]
-    
-    #Remove the pad for size
-    data = data[:-pad_to_remove]
-    
+    data = librosa.istft(stfts, win_length=frame_size, n_fft=n_fft, hop_length=frame_step, window=win_func, center=True)
+    # clip for problems in the dnsmos
+    data = np.clip(data, -1.0, 1.0)
     return data
 
-# def get_pesq(ref_sig, out_sig, sr):
-#     """Calculate PESQ.
-#     Args:
-#         ref_sig: numpy.ndarray, [B, T]
-#         out_sig: numpy.ndarray, [B, T]
-#     Returns:
-#         PESQ
-#     """
-#     pesq_val = 0
-#     for i in range(len(ref_sig)):
-#         pesq_val += pesq(sr, ref_sig[i], out_sig[i], 'wb')
-#     return pesq_val
+def gather_results(row_list, noisy_row_list, csv_file=None, csv_file_allfiles=None, model_name="no_name"):
 
-# def get_stoi(ref_sig, out_sig, sr):
-#     """Calculate STOI.
-#     Args:
-#         ref_sig: numpy.ndarray, [B, T]
-#         out_sig: numpy.ndarray, [B, T]
-#     Returns:
-#         STOI
-#     """
-#     stoi_val = 0
-#     for i in range(len(ref_sig)):
-#         stoi_val += stoi(ref_sig[i], out_sig[i], sr, extended=False)
-#     return stoi_val
+    df = pd.DataFrame(row_list, columns=["filename"] + TRACK_METRICS)
+    df_noisy = pd.DataFrame(noisy_row_list, columns=["filename"] + TRACK_METRICS)
+    if csv_file_allfiles:
+        df.to_csv(csv_file_allfiles, index=False, encoding='utf-8')
+        df_noisy.to_csv(csv_file_allfiles, index=False, encoding='utf-8', mode="a")
 
-def error(est_sig,ref_sig):
-    err_val = 0
+    df_mean = df[TRACK_METRICS].mean().to_frame().transpose()
+    df_noisy_mean = df_noisy[TRACK_METRICS].mean().to_frame().transpose()
+    col_order = []
+    for col in df_mean.columns.values:
+        df_mean[f"d{col}"] = df_mean[col] - df_noisy_mean[col]
+        df_noisy_mean[f"d{col}"] = df_noisy_mean[col] - df_noisy_mean[col]
+        col_order += [col, f"d{col}"]
+    df_mean = df_mean[col_order]
 
-    if len(est_sig) != len(ref_sig):
-        raise Exception('Reference and estimate signal should be of same lenght')
+    if csv_file:
+        print(f"Writing summary results to {csv_file}")
+        df_mean["name"] = model_name
+        df_mean = df_mean[["name"] + col_order]
+        if not os.path.exists(csv_file):
+            df_noisy_mean["name"] = "Noisy"
+            df_noisy_mean = df_noisy_mean[["name"] + col_order]
+            df_noisy_mean.to_csv(csv_file, mode="w", index=False, header=True)
+        df_mean.to_csv(csv_file, mode="a", index=False, header=False)
 
-    for i in range(len(ref_sig)):
-        err_val +=  abs(est_sig[i] - ref_sig[i])
-    
-    return (err_val/len(ref_sig))*100
-
-
-#https://pypi.org/project/speechmos/
-# {'filename': 'D:/data/example/enh.wav',
-#  'ovrl_mos': 2.2067626609880104,
-#  'sig_mos': 3.290418848414798,
-#  'bak_mos': 2.141338429075571,
-#  'p808_mos': 3.0722866}
-
-def pesq_stoi(clean, estimate, samplerate):
-    
-    dnsmos_i = dnsmos.run(estimate, sr=samplerate)
-    pesq_i = pesq(samplerate, clean, estimate, 'wb')
-    stoi_i = stoi(clean, estimate, samplerate, extended=False)
-    mean_error = error(estimate,clean)
-
-    return pesq_i, stoi_i, dnsmos_i.get("ovrl_mos"), mean_error
+    return df_mean, df_noisy_mean

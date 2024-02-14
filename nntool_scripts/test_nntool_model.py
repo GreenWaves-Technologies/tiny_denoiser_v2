@@ -3,14 +3,14 @@ import os
 from csv import writer
 import argcomplete
 import numpy as np
+import pandas as pd
 import soundfile as sf
 from denoiser_nntool_utils import single_audio_inference
-from denoiser_utils import open_wav, pesq_stoi, postprocessing, preprocessing
+from denoiser_utils import gather_results, open_wav, postprocessing, preprocessing
+from nntool_python_utils.audio_utils import compare_audio
 from nn_nntool_script import build_nntool_graph, create_model_parser
-from nntool.api.utils import model_settings, quantization_options
+from nntool.api.utils import model_settings
 from tqdm import tqdm
-
-import texttable
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -30,6 +30,8 @@ def extend_parser_for_test(main_parser: argparse.ArgumentParser):
     # mode = test_dataset
     main_parser.add_argument('--csv_file', default=None,
                              help="path to csv_file to save tests")
+    main_parser.add_argument('--csv_file_allfiles', default=None,
+                             help="path to csv_file to save tests")
     main_parser.add_argument('--noisy_dataset', default=None,
                              help="path to folder of noisy samples")
     main_parser.add_argument('--clean_dataset', default=None,
@@ -43,43 +45,6 @@ def extend_parser_for_test(main_parser: argparse.ArgumentParser):
     main_parser.add_argument('--draw', action="store_true",
                              help="Draw the prepared graph")
     return main_parser
-
-
-def calculate_pesq_stoi(estimate, clean_data):
-    # sz0 = clean_data.shape[0]
-    # sz1 = estimate.shape[0]
-    # print(sz0)
-    # print(sz1)
-    # if sz0 > sz1:
-    #     #estimate = np.pad(estimate, (0, sz0-sz1))
-    #     clean_data = clean_data[:sz1]
-    # else:
-    #     estimate = estimate[:sz0]
-    # print(clean_data.shape)
-    # print(estimate.shape)
-    
-    pesq_i, stoi_i,dnsmos_i,mean_error = pesq_stoi(clean_data, estimate, 16000)
-    return pesq_i, stoi_i,dnsmos_i, mean_error
-
-class TexttableEx(texttable.Texttable):
-    @classmethod
-    def _fmt_int(cls, x, **kw):
-        return f'{x:,}'
-    
-def pretty_performance(res):
-    """
-        Return a nice to print table for performance, usage: print(res.pretty_performance())
-    """
-    table = TexttableEx()
-    table.header(['Layer', 'Cycles', 'Ops',
-                    'Ops/Cycle', '% ops', '% cycles'])
-    table.set_header_align(['l', 'c', 'c', 'c', 'c', 'c'])
-    table.set_cols_dtype(['t', 'i', 'i', 'f', 'f', 'f'])
-    table.set_cols_align(['l', 'r', 'r', 'r', 'r', 'r'])
-    table.set_max_width(0)
-    for row in res.performance:
-        table.add_row(row)
-    return table.draw()
 
 if __name__ == '__main__':
     model_parser = create_model_parser()
@@ -128,9 +93,8 @@ if __name__ == '__main__':
             ),
             tolerance=0.02
         )
-        table = pretty_performance(res)
         with open(os.path.join(model_report_dir, 'table.txt'), 'w') as file:
-            print(table, file=file)
+            print(res.pretty_performance(), file=file)
 
         if args.csv_file !=  None:
             # List that we want to add as a new row
@@ -163,21 +127,21 @@ if __name__ == '__main__':
 
         if args.clean_test_sample:
             clean_data = open_wav(args.clean_test_sample)
-            pesq_i, stoi_i, dnsmos_i, mean_error_i= calculate_pesq_stoi(estimate, clean_data)
-            print(f"pesq=\t{pesq_i}\tand stoi=\t{stoi_i} and dnsmos=\t{dnsmos_i} and mean error=\t{ mean_error_i}\n")
+            res = compare_audio(estimate, clean_data, samplerate=16000)
+            for k, v in res.items():
+                print(f"{k:30}: {v}")
 
         sf.write(args.out_wav, estimate, 16000)
 
     elif args.mode == "test_dataset":
         print(f"Testing on dataset: {args.noisy_dataset}")
         files = os.listdir(args.noisy_dataset)
-        pesq = 0
-        stoi = 0
-        mos = 0 
-        mean_error=0
+        row_list = []
+        noisy_row_list = []
         for c, filename in enumerate(tqdm(files)):
             noisy_file = os.path.join(args.noisy_dataset, filename)
-            stft = preprocessing(noisy_file).T
+            noisy_data = open_wav(noisy_file)
+            stft = preprocessing(noisy_data).T
             stft_out = single_audio_inference(
                 G,
                 stft,
@@ -196,41 +160,31 @@ if __name__ == '__main__':
 
             clean_file = os.path.join(args.clean_dataset, clean_filename)
             clean_data = open_wav(clean_file)
-            pesq_i, stoi_i,dnsmos_i, mean_error_i = calculate_pesq_stoi(estimate, clean_data)
-            if args.verbose:
-                print(f"Sample ({c}/{len(files)})\t{filename}\twith pesq=\t{pesq_i}\tand stoi=\t{stoi_i} and mean error=\t{mean_error_i}")
 
-            pesq += pesq_i
-            stoi += stoi_i
-            mos  += dnsmos_i
-            mean_error += mean_error_i
-            #if ((c+1) % 10) == 0:
-            #    print(f"After {c+1} files: PESQ={pesq/(c+1):.4f} STOI={stoi/(c+1):.4f}")
+            res = compare_audio(estimate, clean_data, samplerate=16000)
+            res.update({"filename": noisy_file})
+            row_list.append(res)
+            noisy_res = compare_audio(noisy_data, clean_data, samplerate=16000)
+            noisy_res.update({"filename": noisy_file})
+            noisy_row_list.append(noisy_res)
+
+            if args.verbose:
+                print(f"Sample ({c}/{len(files)})\t{filename}\t{res}")
 
             if args.output_dataset:
-                output_file = os.path.join(args.output_dataset, filename+os.path.basename(args.trained_model)+("fp32" if args.float_exec_test else args.quant_type)+".wav")
+                if not os.path.exists(args.output_dataset):
+                    os.mkdir(args.output_dataset)
+                filename = os.path.splitext(os.path.basename(filename))[0]
+                model_name = os.path.splitext(os.path.basename(args.trained_model))[0]
+                output_file = os.path.join(args.output_dataset, f"{filename}_{model_name}_{'fp32' if args.float_exec_test else args.quant_type}.wav")
                 # Write out audio as 24bit PCM WAV
                 sf.write(output_file, estimate, 16000)
 
-        if args.csv_file !=  None:
- 
-            # List that we want to add as a new row
-            List = [args.trained_model, "fp32" if args.float_exec_test else args.quant_type, pesq/len(files), stoi/len(files), mos/len(files), mean_error/len(files)]
- 
-            with open(args.csv_file, 'a') as f_object:
-    
-                # Pass this file object to csv.writer()
-                # and get a writer object
-                writer_object = writer(f_object)
-    
-                # Pass the list as an argument into
-                # the writerow()
-                writer_object.writerow(List)
- 
-                # Close the file object
-                f_object.close()
-        print(f"Result of accuracy on the ({len(files)} samples):")
-        print(f"PESQ:       {np.round(pesq / len(files),4)}")
-        print(f"STOI:       {np.round(stoi / len(files),4)}")
-        print(f"DNSMOS:     {np.round(mos / len(files),4)}")
-        print(f"Mean Error: {np.round(mean_error / len(files),4)}")
+        df_mean, df_noisy_mean = gather_results(
+            row_list,
+            noisy_row_list,
+            csv_file=args.csv_file,
+            csv_file_allfiles=args.csv_file_allfiles,
+            model_name=args.trained_model
+        )
+        print(df_mean)

@@ -235,12 +235,7 @@ int main(int argc, char *argv[])
         for (int i=(FRAME_SIZE-1) ; i>=0; i--){
             InFrame[i] = ((STFT_TYPE) in_temp_buffer[i])/(1<<15);
         }
-        STFT_TYPE min=1000000;float max=-1000000;
-        for(int i=300;i<400;i++){
-            if(InFrame[i]>max) max=InFrame[i];
-            if(InFrame[i]<min) min=InFrame[i];
-        }
-        printf("max: %f min: %f\n",max,min);
+
         /******
          * Compute Preprocessing + NN + PostProcessing
         ******/
