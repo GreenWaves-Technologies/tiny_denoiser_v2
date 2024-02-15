@@ -159,11 +159,12 @@ if __name__ == '__main__':
                 clean_filename = filename
 
             clean_file = os.path.join(args.clean_dataset, clean_filename)
-            clean_data = open_wav(clean_file)
+            clean_data = open_wav(clean_file) if os.path.exists(clean_file) else None
 
             res = compare_audio(estimate, clean_data, samplerate=16000)
             res.update({"filename": noisy_file})
             row_list.append(res)
+            noisy_data = np.clip(noisy_data, -1.0, 1.0)
             noisy_res = compare_audio(noisy_data, clean_data, samplerate=16000)
             noisy_res.update({"filename": noisy_file})
             noisy_row_list.append(noisy_res)
