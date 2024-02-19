@@ -69,30 +69,29 @@ menu "DENOISER APP menu"
     choice MODEL_TYPE
         prompt  "Select Model"
         default GRU_DNS 
+
         config GRU_DNS
-            bool "GRU trained on DNS"
+            bool "GRU trained on DNS (model/denoiser_GRU_dns.onnx)"
         config GRU_VALENTINI
-            bool "GRU trained on Valentini"
+            bool "GRU trained on Valentini (model/denoiser_GRU_Valentini.onnx)"
         config LSTM_VALENTINI
-            bool "LSTM trained on Valentini"
+            bool "LSTM trained on Valentini (model/denoiser_LSTM_Valentini.onnx)"
         config NEW_LSTM_DNS
-            bool "New LSTM trained on DNS"
+            bool "New LSTM trained on DNS (model/FullRankLSTM.onnx)"
         config NEW_GRU_DNS
-            bool "New GRU trained on DNS"
+            bool "New GRU trained on DNS (model/FullRankGRU.onnx)"
         config NEW_LSTM_DNS_TT_RANK_2
-            bool "New LSTM trained on DNS with Tensor Train Rank Reduction to rank 2"
+            bool "New LSTM trained on DNS with Tensor Train Rank Reduction to rank 2 (model/tensor_train/tt_denoiser_rank_2.onnx)"
         config NEW_LSTM_DNS_TT_RANK_4
-            bool "New LSTM trained on DNS with Tensor Train Rank Reduction to rank 4"
+            bool "New LSTM trained on DNS with Tensor Train Rank Reduction to rank 4 (model/tensor_train/tt_denoiser_rank_4.onnx)"
         config NEW_LSTM_DNS_TT_RANK_8
-            bool "New LSTM trained on DNS with Tensor Train Rank Reduction to rank 8"
+            bool "New LSTM trained on DNS with Tensor Train Rank Reduction to rank 8 (model/tensor_train/tt_denoiser_rank_8.onnx)"
         config NEW_LSTM_DNS_TT_RANK_16
-            bool "New LSTM trained on DNS with Tensor Train Rank Reduction to rank 16"
+            bool "New LSTM trained on DNS with Tensor Train Rank Reduction to rank 16 (model/tensor_train/tt_denoiser_rank_16.onnx)"
         config NEW_LSTM_DNS_TT_RANK_48
-            bool "New LSTM trained on DNS with Tensor Train Rank Reduction to rank 48"
+            bool "New LSTM trained on DNS with Tensor Train Rank Reduction to rank 48 (model/tensor_train/tt_denoiser_rank_48.onnx)"
         config NEW_LSTM_DNS_TT_RANK_80
-            bool "New LSTM trained on DNS with Tensor Train Rank Reduction to rank 80"
-        config NEW_LSTM_DNS_TT_FULL_RANK
-            bool "New LSTM trained on DNS with Tensor Train Full Rank"
+            bool "New LSTM trained on DNS with Tensor Train Rank Reduction to rank 80 (model/tensor_train/tt_denoiser_rank_80.onnx)"
     endchoice
 
 endmenu

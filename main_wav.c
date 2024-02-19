@@ -14,7 +14,7 @@
 #define __XSTR(__s) __STR(__s)
 #define __STR(__s) #__s
 
-#define MAX_N_SAMPLES 40000
+#define MAX_N_SAMPLES 400000
 #define GAP9_FREQ 370      // 370MHz
 
 struct pi_device DefaultRam; 
@@ -216,7 +216,7 @@ int main(int argc, char *argv[])
     }
     for (int frame_id=0; frame_id < tot_frames; frame_id++)
     {
-        printf("Frame [%3d/%3d]\n", frame_id+1, tot_frames);
+        if (((frame_id+1) % 50) == 0) printf("Frame [%3d/%3d]\n", frame_id+1, tot_frames);
 
         /******
          * Copy Data from L3 to L2
