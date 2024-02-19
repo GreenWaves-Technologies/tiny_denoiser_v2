@@ -28,11 +28,11 @@ void RunDenoiser(DenoiserArg_T *Arg)
     STFT_TYPE *DenoisedFrame = Arg->DenoisedFrame;
     NN_TYPE   *InputNN       = Arg->InputNN;
     NN_TYPE   *OutputNN      = Arg->OutputNN;
-    RNN_TYPE   *RNN1HState    = Arg->RNN1HState;
-    RNN_TYPE   *RNN2HState    = Arg->RNN2HState;
+    RNN_TYPE_H   *RNN1HState    = Arg->RNN1HState;
+    RNN_TYPE_H   *RNN2HState    = Arg->RNN2HState;
     #ifndef GRU
-    RNN_TYPE   *RNN1CState    = Arg->RNN1CState;
-    RNN_TYPE   *RNN2CState    = Arg->RNN2CState;
+    RNN_TYPE_C   *RNN1CState    = Arg->RNN1CState;
+    RNN_TYPE_C   *RNN2CState    = Arg->RNN2CState;
     #endif
     int *PerfCounter = Arg->PerfCounter;
 
@@ -108,11 +108,14 @@ void RunDenoiser(DenoiserArg_T *Arg)
         RNN1CState,
         RNN2HState,
         RNN2CState,
-        OutputNN,
+        OutputNN
+        #ifndef TT_FULL_RANK
+        ,
         RNN1HState,
         RNN1CState,
         RNN2HState,
         RNN2CState
+        #endif
     );
 #endif
     PerfCounter[2] += gap_cl_readhwtimer() - start;

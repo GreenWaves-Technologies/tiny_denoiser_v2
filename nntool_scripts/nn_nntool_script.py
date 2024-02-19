@@ -115,7 +115,6 @@ def build_nntool_graph(trained_model, quant_type, quant_dataset=None, stats_file
                     nname: quantization_options(scheme="FLOAT", float_type="float16")
                     for nname in [
                         "input_1",
-
                         "Conv_0_reshape_in",
                         "Conv_0_fusion",
                         "Conv_147_fusion",
@@ -146,10 +145,11 @@ def build_nntool_graph(trained_model, quant_type, quant_dataset=None, stats_file
     if not tensor_train:
         for rnn_node in G.nodes(RNNNodeBase):
             rnn_node.set_states_as_inputs(G)
+        
 
     states_idxs = get_states_idxs(G, tensor_train)
-    #print("After quantization and fusion states output identified as:")
-    #for state_idx in states_idxs:
+    # print("After quantization and fusion states output identified as:")
+    # for state_idx in states_idxs:
     #    print(f"Node {G[state_idx[0]].name} ({state_idx[0]}) output {state_idx[1]}")
     return G, states_idxs
 
@@ -163,7 +163,8 @@ if __name__ == '__main__':
         args.quant_type,
         quant_dataset=args.quant_dataset,
         stats_file=args.stats_pickle,
-        requantize=args.requantize
+        requantize=args.requantize,
+        tensor_train=args.tensor_train
     )
 
     #G.draw(view=False, filepath="graph")

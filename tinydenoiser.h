@@ -25,10 +25,10 @@ typedef struct {
     STFT_TYPE *DenoisedFrame;
     NN_TYPE   *InputNN;
     NN_TYPE   *OutputNN;
-    RNN_TYPE   *RNN1HState;
-    RNN_TYPE   *RNN1CState;
-    RNN_TYPE   *RNN2HState;
-    RNN_TYPE   *RNN2CState;
+    RNN_TYPE_H   *RNN1HState;
+    RNN_TYPE_C   *RNN1CState;
+    RNN_TYPE_H   *RNN2HState;
+    RNN_TYPE_C   *RNN2CState;
     int *PerfCounter;
 } DenoiserArg_T;
 

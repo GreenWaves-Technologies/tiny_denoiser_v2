@@ -574,15 +574,15 @@ int main(void)
     STFT_TYPE *DenoisedFrame    = (STFT_TYPE *)  pi_l2_malloc(N_FFT * sizeof(STFT_TYPE));
     NN_TYPE   *InputNN          = (NN_TYPE *)    pi_l2_malloc(STFT_SIZE * sizeof(NN_TYPE));
     NN_TYPE   *OutputNN         = (NN_TYPE *)    pi_l2_malloc(STFT_SIZE * sizeof(NN_TYPE));
-    RNN_TYPE  *RNN1HState       = (RNN_TYPE *)   pi_l2_malloc(RNN_STATE_SIZE * sizeof(RNN_TYPE));
-    RNN_TYPE  *RNN2HState       = (RNN_TYPE *)   pi_l2_malloc(RNN_STATE_SIZE * sizeof(RNN_TYPE));
+    RNN_TYPE_H  *RNN1HState       = (RNN_TYPE_H *)   pi_l2_malloc(RNN_STATE_SIZE * sizeof(RNN_TYPE_H));
+    RNN_TYPE_H  *RNN2HState       = (RNN_TYPE_H *)   pi_l2_malloc(RNN_STATE_SIZE * sizeof(RNN_TYPE_H));
     if (InFrame==NULL || StftOut==NULL || DenoisedFrame==NULL || InputNN==NULL || OutputNN==NULL || RNN1HState==NULL || RNN2HState==NULL) {
         printf("Error allocating input/output buffers\n");
         return -1;
     }
     #ifndef GRU
-    RNN_TYPE *RNN1CState       = (RNN_TYPE *)   pi_l2_malloc(RNN_STATE_SIZE * sizeof(RNN_TYPE));
-    RNN_TYPE *RNN2CState       = (RNN_TYPE *)   pi_l2_malloc(RNN_STATE_SIZE * sizeof(RNN_TYPE));
+    RNN_TYPE_C *RNN1CState       = (RNN_TYPE_C *)   pi_l2_malloc(RNN_STATE_SIZE * sizeof(RNN_TYPE_C));
+    RNN_TYPE_C *RNN2CState       = (RNN_TYPE_C *)   pi_l2_malloc(RNN_STATE_SIZE * sizeof(RNN_TYPE_C));
     if (RNN1CState==NULL || RNN2CState==NULL) {
         printf("Error allocating input/output buffers\n");
         return -1;
