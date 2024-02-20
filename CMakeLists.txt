@@ -69,11 +69,6 @@ elseif(${CONFIG_GRU_VALENTINI})
   set(GRU_FLAG -DGRU)
 elseif(${CONFIG_LSTM_VALENTINI})
   set(TRAINED_ONNX      ${CMAKE_CURRENT_SOURCE_DIR}/model/denoiser_LSTM_Valentini.onnx)
-elseif(${CONFIG_NEW_LSTM_DNS})
-  set(TRAINED_ONNX      ${CMAKE_CURRENT_SOURCE_DIR}/model/FullRankLSTM.onnx)
-  elseif(${CONFIG_NEW_GRU_DNS})
-  set(TRAINED_ONNX      ${CMAKE_CURRENT_SOURCE_DIR}/model/FullRankGRU.onnx)
-  set(GRU_FLAG -DGRU)
 elseif(${CONFIG_NEW_LSTM_DNS_TT_RANK_2})
   set(TRAINED_ONNX      ${CMAKE_CURRENT_SOURCE_DIR}/model/tensor_train/tt_denoiser_rank_2.onnx)
   set(TT_FLAG -DTT)
@@ -96,7 +91,6 @@ elseif(${CONFIG_NEW_LSTM_DNS_TT_FULL_RANK})
   set(TRAINED_ONNX      ${CMAKE_CURRENT_SOURCE_DIR}/model/tensor_train/tt_TinyDenoiser_FullRankLSTM.onnx)
   set(TT_FLAG -DTT)
   set(TT_FULL_FLAG -DTT_FULL_RANK)
-  set(NNTOOL_TT_FLAG --tensor_train)
 else()
   message(ERROR "${APP_MSG_PREFIX} Model selection went wrong!")
 endif()
@@ -232,7 +226,6 @@ add_custom_command(
                                       --at_model_path=${NN_AT_MODEL_PATH}
                                       --tensors_dir=${NN_AT_TENSORS_DIR}
                                       --flash_type=${FLASH_TYPE}
-                                      ${NNTOOL_TT_FLAG}
 )
 add_custom_target(clean_nn_model
   COMMENT "clean_nn_model: removing ${COMMON_MODEL_BUILDDIR}/${MODEL_GEN}"
