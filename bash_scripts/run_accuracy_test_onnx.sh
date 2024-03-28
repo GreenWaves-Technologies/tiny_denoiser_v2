@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # nn_name=( "FullRankLSTM_Stateful" "tt_denoiser_rank_80" "tt_denoiser_rank_48" "tt_denoiser_rank_16" "tt_denoiser_rank_8" "tt_denoiser_rank_4" "tt_denoiser_rank_2" )
 nn_name=( "tt_denoiser_rank_48" "tt_denoiser_rank_16" "tt_denoiser_rank_8" "tt_denoiser_rank_4" "tt_denoiser_rank_2" )

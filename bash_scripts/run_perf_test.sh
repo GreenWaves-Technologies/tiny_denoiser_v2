@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 #nn_name=( "denoiser_LSTM_Valetini" "tt_denoiser_rank_2" )
 #quant_type=( "fp32" "fp16" )
