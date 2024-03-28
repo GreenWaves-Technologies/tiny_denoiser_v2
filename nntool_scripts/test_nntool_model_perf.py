@@ -10,9 +10,6 @@ from nntool.api.types import LSTMNode, RNNNodeBase
 from nntool.api.utils import model_settings
 
 def extend_parser_for_perf(main_parser: argparse.ArgumentParser):
-    main_parser.add_argument('--mode', default="test_dataset", choices=["test_sample", "test_dataset"],
-                             help="Script mode")
-    # mode = test_sample
     main_parser.add_argument('--test_sample', default="dataset/test/noisy/p232_050.wav",
                              help=".wav file to use for testing")
     return main_parser
@@ -28,7 +25,8 @@ if __name__ == '__main__':
         args.quant_type,
         quant_dataset=args.quant_dataset,
         stats_file=args.stats_pickle,
-        requantize=args.requantize
+        requantize=args.requantize,
+        tensor_train=args.tensor_train
     )
 
     G.draw(view=False, filepath="graph")
@@ -67,13 +65,13 @@ if __name__ == '__main__':
             l3_flash_device="AT_MEM_L3_DEFAULTFLASH" if args.flash_type == "flash" else "AT_MEM_L3_MRAMFLASH",
             basic_kernel_header_file="NN_Expression_Kernels.h",
             basic_kernel_source_file="NN_Expression_Kernels.c",
-            l2_size=1200000,
+            l2_size=1000000,
             l1_size=128000,
-            graph_l1_promotion=2,
+            # graph_l1_promotion=2,
             graph_warm_construct=1,
             graph_size_opt=2,
             graph_const_exec_from_flash=True,
-            graph_group_weights=True,
+            # graph_group_weights=True,
             graph_async_fork=True,
             graph_monitor_cycles=False,
             graph_produce_node_names=False,

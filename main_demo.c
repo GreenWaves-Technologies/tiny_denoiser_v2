@@ -332,7 +332,7 @@ static pi_err_t open_sfu()
         pi_sfu_buffer_init(&sfu_pdmout_buff[i], data, FRAME_STEP, sizeof(int));
 
         sfu_pdmout_buff[i].task = &sfu_mem_in_task;
-        //pi_sfu_enqueue(sfu_graph, sfu_memin_port, &sfu_pdmout_buff[i]);
+        pi_sfu_enqueue(sfu_graph, sfu_memin_port, &sfu_pdmout_buff[i]);
     }
     
     // Allocate Input buffers
@@ -476,19 +476,19 @@ int main(void)
 
     pi_ssm6515_conf_t* ssm6515_conf_left  = (pi_ssm6515_conf_t*)(ssm6515_device[CHANNEL_LEFT]->config);
     pi_ssm6515_conf_t* ssm6515_conf_right = (pi_ssm6515_conf_t*)(ssm6515_device[CHANNEL_RIGHT]->config);
-    int i2s_itf_left  = ssm6515_conf_left->i2s_itf;
-    int pdm_ch_left   = ssm6515_conf_left->pdm_channel;
-    int i2s_itf_right = ssm6515_conf_right->i2s_itf;
-    int pdm_ch_right  = ssm6515_conf_right->pdm_channel;
+    int i2s_id_out_left  = ssm6515_conf_left->i2s_itf;
+    int i2s_ch_out_left  = ssm6515_conf_left->pdm_channel;
+    int i2s_id_out_right = ssm6515_conf_right->i2s_itf;
+    int i2s_ch_out_right = ssm6515_conf_right->pdm_channel;
 #else
-    int i2s_itf_left  = 2;
-    int pdm_ch_left   = 0;
-    int i2s_itf_right = 1;
-    int pdm_ch_right  = 0;
+    int i2s_id_out_left  = 2;
+    int i2s_ch_out_left  = 0;
+    int i2s_id_out_right = 1;
+    int i2s_ch_out_right = 0;
 #endif
 
-    if ((PI_OK != open_i2s(&i2s_device[CHANNEL_LEFT],  i2s_itf_left)) ||
-        (PI_OK != open_i2s(&i2s_device[CHANNEL_RIGHT], i2s_itf_right))
+    if ((PI_OK != open_i2s(&i2s_device[CHANNEL_LEFT],  i2s_id_out_left)) ||
+        (PI_OK != open_i2s(&i2s_device[CHANNEL_RIGHT], i2s_id_out_right))
     ) {
         return PI_FAIL;
     }
@@ -497,15 +497,17 @@ int main(void)
     /***********************************************************************************************
      * Binding PDM out Channel
      **********************************************************************************************/
-    pi_sfu_pdm_itf_id_t pdm_out_itf_id_left  = {i2s_itf_left,  pdm_ch_left, 1};
-    pi_sfu_pdm_itf_id_t pdm_out_itf_id_right = {i2s_itf_right, pdm_ch_right, 1};
+    //                                         {SAI,              Chan/Slot,        IsOutput }
+    pi_sfu_pdm_itf_id_t pdm_out_itf_id_left  = {i2s_id_out_left,  i2s_ch_out_left,  1        };
+    pi_sfu_pdm_itf_id_t pdm_out_itf_id_right = {i2s_id_out_right, i2s_ch_out_right, 1        };
     if ((PI_OK != pi_sfu_graph_pdm_bind(sfu_graph, SFU_Name(SFUGraph, PdmOut1),  &pdm_out_itf_id_left)) ||
         (PI_OK != pi_sfu_graph_pdm_bind(sfu_graph, SFU_Name(SFUGraph, PdmOut2),  &pdm_out_itf_id_right))
     ) {
         printf("Failed to open I2S device\n");
         return PI_FAIL;
     }
-    printf("Setup sfu out bindings to %d %d - %d %d\n", i2s_itf_left,  pdm_ch_left, i2s_itf_right, pdm_ch_right);
+    printf("Setup sfu out bindings to (SAI=%d Slot/Ch=%d - Left channel) and (SAI=%d Slot/Ch=%d - Right channel)\n", \
+        i2s_id_out_left, i2s_ch_out_left, i2s_id_out_right, i2s_ch_out_right);
 
 #ifndef __PLATFORM_GVSOC__
     // Writing SSM6515 configuration
@@ -522,13 +524,15 @@ int main(void)
     /***********************************************************************************************
      * Binding this SAI's microphone if it has been enabled by the configuration file
      **********************************************************************************************/
-    //Sai, Channel, isOutput
-    pi_sfu_pdm_itf_id_t pdm_in_itf_id_left  = { 2, 2, 1};
+    // Reuse the same i2s interface of one of the output
+    int i2s_id_in = 2;
+    int i2s_ch_in = 2;
+    pi_sfu_pdm_itf_id_t pdm_in_itf_id_left  = { i2s_id_in, i2s_ch_in, 0};
     if (PI_OK != pi_sfu_graph_pdm_bind(sfu_graph, SFU_Name(SFUGraph, PdmIn),  &pdm_in_itf_id_left)) {
         printf("Failed to open I2S device\n");
         return PI_FAIL;
     }
-    printf("Setup sfu in bindings to %d %d\n", i2s_itf_left,  pdm_ch_left);
+    printf("Setup sfu in bindings to (SAI=%d Slot/Ch=%d)\n", i2s_id_in,  i2s_ch_in);
 
     /***********************************************************************************************
      * Construct the Autotiler Graphs
@@ -689,18 +693,24 @@ int main(void)
             //((int32_t*)sfu_pdmout_buff[sfu_pdmout_buff_idx ^ 1].data)[i]= (int32_t)((float)(InFrame[i]) * (1<<Q_BIT_OUT));
         }
         
+        #ifndef __PLATFORM_GVSOC__
+        // With Gvsoc gvcontrol emulation, the sfu_reset does not work
         if(counter==3){
             pi_time_wait_us(500);
             pi_sfu_enqueue(sfu_graph, sfu_memin_port, &sfu_pdmout_buff[0]);
             pi_sfu_enqueue(sfu_graph, sfu_memin_port, &sfu_pdmout_buff[1]);
-            //SFU_GraphResetInputs(sfu_graph);
             pi_sfu_reset();
         }
+        #endif
 
         /* Toggle GPIO (e.g. LED or gpio for measurements)*/
         if ((counter++ % 30) == 0) {
             gpio_val ^= 1;
+            #ifndef __PLATFORM_GVSOC__
             pi_gpio_pin_write(PAD_GPIO_LED2, gpio_val);
+            #else
+            printf("Passed [%.3fms]\n", ((float) counter*FRAME_STEP) / 16);
+            #endif
         }
 
         /* Set the SoC frequency back to a minimal that allow you to keep fetching data from mics */

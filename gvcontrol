@@ -9,7 +9,7 @@ parser.add_argument("--host", dest="host", default="localhost", help="Specify ho
 parser.add_argument("--port", dest="port", default=30000, type=int, help="Specify host port")
 parser.add_argument("--wav_in", required=True, type=str, help="Specify the relative path to the input wav file")
 parser.add_argument("--wav_out", required=True, type=str, help="Specify the relative path to the output wav file")
-parser.add_argument("--duration", dest="duration", default=1800000000000, type=int, help="Specify the relative path to the folder containing the outputs")
+parser.add_argument("--duration", dest="duration", default=3e12, type=int, help="Duration of the simulation in ps")
 args = parser.parse_args()
 
 
@@ -18,7 +18,7 @@ gv = gvsoc.Proxy(args.host, args.port)
 testbench = gvsoc.Testbench(gv)
 
 # Open SAI interfaces in PDM mode
-i2s_in = testbench.i2s_get(1)
+i2s_in = testbench.i2s_get(2)
 i2s_in.open(is_pdm=True)
 i2s_out = testbench.i2s_get(2)
 i2s_out.open(is_pdm=True) #  , sampling_freq=3072000)

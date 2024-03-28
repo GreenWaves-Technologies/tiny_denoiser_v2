@@ -14,6 +14,16 @@ cmake -B build
 cmake --build build --target run
 ```
 
+**GvSoc - gvcontrol**
+To run the **Demo mode** on GVSoC you can use the `gvcontrol` file. The gvcontrol is used to send/read data to/from the i2s interface of the gap9 gvsoc. You can chose the input noisy wav file you want to process. Since gap is waiting for pdm data, the pcm/pdm convertion module of gvsoc is used. Beware that this mode is very slow (~10 minutes to run the whole execution on a small file). Select GVSoc as target platform with the **proxy option enabled**, then, in another terminal:
+```
+./gvcontrol --wav_in ../dataset/test_48kHz/noisy/p232_170.wav --wav_out ../output.wav
+```
+
+**NOTE**:
+1. the wav_in/wav_out paths passed to gvcontrol script are relative to the build directory not your current directory.
+2. the passed wav files must be in 48kHz because the main_demo.c will open the i2s interfaces with 48kHz settings and the SFU will be responsible to down/up-sample.
+
 **DenoiseWav Mode**
 Optionally, the application can run on GVSOC (or board) to denoise a custom audio file (.wav).
 ```
@@ -21,12 +31,7 @@ cmake -B build
 cmake --build build --target menuconfig # Select the options DenoiseWav in the DENOISER APP -> Application mode menu
 cmake --build build --target run
 ```
-Output wav file will be written to test_gap.wav inside the project folder.
-
-**GvSoc - gvcontrol**
-To run the **Demo mode** on GVSoC you can use the `gvcontrol` file.
-The gvcontrol is used to send/read data to/from the i2s interface of the gap9 gvsoc.
-You can chose the input noisy wav file you want to process. Since gap is waiting for pdm data, the pcm/pdm convertion module of gvsoc is used. To learn more about this please refer to the following example in the GAP sdk : `basic/interface/sai/pcm2pdm_pdm2pcm`.
+Output wav file will be written to denoised_output.wav inside the project folder.
 
 ## Project Structure
 * `main_demo.c`: is the main file, including the application code (*Demo Mode*)
@@ -36,7 +41,7 @@ You can chose the input noisy wav file you want to process. Since gap is waiting
     * `denoiser_GRU_dns.onnx` is a GRU based models trained on the [DNS][dns] dataset. (Used by default)
     * `denoiser_LSTM_valentini.onnx` and `denoiser_GRU_valentini.onnx` are respectively LSTM and GRU models trained on the [Valentini][valentini]. they are used for testing purpose.
 * `nntool_scripts/`: for more details refer to [Python Utilities](#python-utilities) 
-    * `nn_nntool_script.py`: includes the nntool recipes to quantize the LSTM or GRU models and prepare for deployment (`build_nntool_graph` fucntion) then generate the Autotiler code. You can refer to the [quantization section](#nn-quantization-settings) for more details.
+    * `nn_nntool_script.py`: includes the nntool recipes to quantize the LSTM or GRU models and prepare for deployment (`build_nntool_graph` fucntion) then generate the Autotiler code. You can refer to the [quantization section](#quantization) for more details.
     * `fft_nntool_script.py`: it contains the scripts to generate the Autotiler pre/post-processing models for the FFT/iFFT.
     * `test_onnx.py`: test the quality of the original onnx models on a single sample or an entire dataset with onnxruntime.
     * `test_nntool_model.py`: test the quality of the deployable models on a single sample or an entire dataset with NNTool bit-accurate backend wrt the target computation.
@@ -44,7 +49,7 @@ You can chose the input noisy wav file you want to process. Since gap is waiting
 * `dataset/`: contains the audio samples for testing and quantization claibration
 * `SFUGraph.src`: is the configuation file for Audio IO. It is used only for board target.
 
-## NN Quantization Settings
+## Quantization
 The Post-Training quantization process of the RNN model is operated by the GAPflow.
 Both LSTM and GRU models can be quantized using one of the different options:
 * `FP16`: quantizing both activations and weights to _float16_ format. This does not require any calibration samples.
@@ -57,6 +62,8 @@ In the `nntool_scripts` folder there are several python utilities to test the qu
 NOTE: `nntool_scripts/test_nntool_model.py` can be run with --float_exec_test, in this case, whatever quantization scheme selected, the execution on NNTool backend will be run with fp32 precision and yields to almost identical results wrt onnx execution.
 
 ### Denoise a wav file
+
+You can test the quality of the deployable models with python scripting:
 
 **NNTOOL**:
 ```

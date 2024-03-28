@@ -43,6 +43,10 @@ menu "DENOISER APP menu"
 
     endchoice
 
+    config WAV_FILE_TO_DENOISE
+        depends on DENOISE_WAV
+        string "Wav to denoise (relative path from dataset/test folder)"
+        default "p232_050.wav"
 
     choice QUANT_TYPE
         prompt "Quantization Type"
