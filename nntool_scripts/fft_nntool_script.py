@@ -3,7 +3,6 @@ from nntool.api import NNGraph
 from nntool.api.utils import model_settings
 from nntool.graph.types import RFFT2DPreprocessingNode, IRFFT2DPreprocessingNode
 from nntool.graph.dim import Dim
-from nntool.graph.types.base import NNEdge
 import argparse
 import argcomplete
 

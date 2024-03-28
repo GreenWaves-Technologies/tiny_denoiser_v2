@@ -1,8 +1,5 @@
-import os
-
 import numpy as np
 from nntool.api import NNGraph
-from nntool.graph.types import LSTMNode, RNNNodeBase
 from nntool.stats.activation_ranges_collector import ActivationRangesCollector
 from denoiser_utils import preprocessing
 from tqdm import tqdm

@@ -3,7 +3,6 @@ import os
 from csv import writer
 import argcomplete
 import numpy as np
-import pandas as pd
 import soundfile as sf
 from denoiser_nntool_utils import single_audio_inference
 from denoiser_utils import gather_results, open_wav, postprocessing, preprocessing

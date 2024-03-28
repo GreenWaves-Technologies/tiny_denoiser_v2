@@ -2,10 +2,6 @@
 import os
 import librosa
 import numpy as np
-from pesq import pesq
-from pystoi import stoi
-from speechmos import dnsmos
-import pandas as pd
 
 TRACK_METRICS = ["ovrl_mos", "sig_mos", "bak_mos", "p808_mos", "pesq", "stoi", "meanerr"]
 
@@ -39,6 +35,7 @@ def postprocessing(stfts, frame_size=400, frame_step=100, n_fft=512, win_func="h
     return data
 
 def gather_results(row_list, noisy_row_list, csv_file=None, csv_file_allfiles=None, model_name="no_name"):
+    import pandas as pd
 
     df = pd.DataFrame(row_list, columns=["filename"] + TRACK_METRICS)
     df_noisy = pd.DataFrame(noisy_row_list, columns=["filename"] + TRACK_METRICS)

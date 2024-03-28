@@ -1,0 +1,11 @@
+argcomplete>=2.0.0
+bfloat16>=1.1
+librosa>=0.10.1
+matplotlib>=3.8.3
+numpy>=1.25.2
+onnxruntime>=1.13.1
+pandas>=2.2.1
+pesq>=0.0.4
+soundfile>=0.12.1
+tensorflow>=2.11.0
+tqdm>=4.64.1
