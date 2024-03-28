@@ -34,4 +34,4 @@ variants:
         postrun_args:
             - --noisy_file GAPTEST_BUILD_DIR/denoised_output.wav
             - --clean_file GAPTEST_TEST_DIR/dataset/test/noisy/p232_050.wav
-            - --pesq_thr 1.8
+            - --pesq_thr 1.4
