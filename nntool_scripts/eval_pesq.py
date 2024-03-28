@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 
 import argparse
 import os
@@ -28,4 +29,5 @@ if __name__ == '__main__':
     res = compare_audio(noisy_data, clean_data, samplerate=16000)
     print(f"{res}\n")
     if args.pesq_thr:
-        assert res["pesq"] > args.pesq_thr
+        assert res["pesq"] > args.pesq_thr, f"Pesq lower than expected {res['pesq']:.3f} <= {args.pesq_thr}"
+        print(f"Test passed ({res['pesq']:.3f} > {args.pesq_thr})")

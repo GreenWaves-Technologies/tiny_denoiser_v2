@@ -1,0 +1,37 @@
+name: denoiser_v2
+variants:
+
+    nn_test_gvsoc:
+        chip: gap9
+        board: gap9evk
+        platform: gvsoc
+        os: freertos
+        builder: cmake
+        flags:
+            - CONFIG_ENABLE_AUTOTILER=y
+            - CONFIG_DEMO=n
+            - CONFIG_DENOISE_WAV=y
+            - CONFIG_FP16=y
+            - CONFIG_GRU_DNS=y
+            - CONFIG_WAV_FILE_TO_DENOISE=p232_050.wav
+            - CONFIG_NEW_TILER_DSP_LIB=y
+            - CONFIG_BOARD_GAP9MOD_V1_0_B=y
+            - CONFIG_BOARD_GAP9EVK_V1_3=y
+            - CONFIG_LIB_GAP_LIB=y
+            - CONFIG_LIB_GAP_LIB_WAV_IO=y
+            - CONFIG_DRIVER_READFS=y
+            - CONFIG_DRIVER_HOSTFS=y
+            - CONFIG_DRIVER_TYPE_FLASH=y
+            - CONFIG_DRIVER_TYPE_RAM=y
+            - CONFIG_DRIVER_TYPE_MRAM=y
+            - CONFIG_DRIVER_I2C=y
+            - CONFIG_DRIVER_I2S=y
+            - CONFIG_DRIVER_GPIO=y
+            - CONFIG_LIB_SFU=y
+            - CONFIG_LIB_SFU_OPTION_AUDIO_SW_QUEUES=y
+
+        postrun_script: nntool_scripts/eval_pesq.py
+        postrun_args:
+            - --noisy_file GAPTEST_BUILD_DIR/denoised_output.wav
+            - --clean_file GAPTEST_TEST_DIR/dataset/test/noisy/p232_050.wav
+            - --pesq_thr 1.8
