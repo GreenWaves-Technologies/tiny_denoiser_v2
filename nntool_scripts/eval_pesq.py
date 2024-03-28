@@ -4,7 +4,6 @@ import argparse
 import os
 import argcomplete
 from denoiser_utils import open_wav
-from nntool_python_utils.audio_utils import compare_audio
 
 def create_parser():
     # create the top-level parser
@@ -26,8 +25,12 @@ if __name__ == '__main__':
 
     noisy_data = open_wav(args.noisy_file)
     clean_data = open_wav(args.clean_file) if args.clean_file is not None else None
-    res = compare_audio(noisy_data, clean_data, samplerate=16000)
-    print(f"{res}\n")
-    if args.pesq_thr:
-        assert res["pesq"] > args.pesq_thr, f"Pesq lower than expected {res['pesq']:.3f} <= {args.pesq_thr}"
-        print(f"Test passed ({res['pesq']:.3f} > {args.pesq_thr})")
+    if args.pesq_thr is None:
+        from nntool_python_utils.audio_utils import compare_audio
+        res = compare_audio(noisy_data, clean_data, samplerate=16000)
+        print(f"{res}\n")
+    else:
+        from pesq import pesq
+        res = pesq(16000, clean_data, noisy_data, 'wb')
+        assert res > args.pesq_thr, f"Pesq lower than expected {res:.3f} <= {args.pesq_thr}"
+        print(f"Test passed ({res:.3f} > {args.pesq_thr})")
