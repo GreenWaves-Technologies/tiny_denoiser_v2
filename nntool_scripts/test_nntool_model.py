@@ -70,8 +70,7 @@ if __name__ == '__main__':
         model_input_data = [mag,*nn_states]
         
         model_report_dir = "reports/"+args.trained_model+args.quant_type+"/"
-        if not os.path.exists(model_report_dir):
-            os.makedirs(model_report_dir)
+        os.makedirs(model_report_dir, exist_ok=True)
         
         res = G.execute_on_target(
             directory=os.path.join(model_report_dir,"build"),
@@ -128,7 +127,7 @@ if __name__ == '__main__':
             clean_data = open_wav(args.clean_test_sample)
             res = compare_audio(estimate, clean_data, samplerate=16000)
             for k, v in res.items():
-                print(f"{k:30}: {v}")
+                print(f"{k:>30}: {v:.3f}")
 
         sf.write(args.out_wav, estimate, 16000)
 
@@ -161,6 +160,11 @@ if __name__ == '__main__':
             clean_data = open_wav(clean_file) if os.path.exists(clean_file) else None
 
             res = compare_audio(estimate, clean_data, samplerate=16000)
+            if args.verbose:
+                print(f"Sample ({c}/{len(files)})\t{filename}")
+                for k, v in res.items():
+                    print(f"{k:>30}: {v:.3f}")
+
             res.update({"filename": noisy_file})
             row_list.append(res)
             noisy_data = np.clip(noisy_data, -1.0, 1.0)
@@ -168,15 +172,12 @@ if __name__ == '__main__':
             noisy_res.update({"filename": noisy_file})
             noisy_row_list.append(noisy_res)
 
-            if args.verbose:
-                print(f"Sample ({c}/{len(files)})\t{filename}\t{res}")
-
             if args.output_dataset:
-                if not os.path.exists(args.output_dataset):
-                    os.mkdir(args.output_dataset)
-                filename = os.path.splitext(os.path.basename(filename))[0]
-                model_name = os.path.splitext(os.path.basename(args.trained_model))[0]
-                output_file = os.path.join(args.output_dataset, f"{filename}_{model_name}_{'fp32' if args.float_exec_test else args.quant_type}.wav")
+                os.makedirs(args.output_dataset, exist_ok=True)
+                # model_name = os.path.splitext(os.path.basename(args.trained_model))[0]
+                # filename = os.path.splitext(os.path.basename(filename))[0]
+                # output_file = os.path.join(args.output_dataset, f"{filename}_{model_name}_{'fp32' if args.float_exec_test else args.quant_type}.wav")
+                output_file = os.path.join(args.output_dataset, filename)
                 # Write out audio as 24bit PCM WAV
                 sf.write(output_file, estimate, 16000)
 

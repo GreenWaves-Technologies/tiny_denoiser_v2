@@ -103,7 +103,8 @@ if __name__ == '__main__':
         if args.clean_test_sample:
             clean_data = open_wav(args.clean_test_sample)
             res = compare_audio(estimate, clean_data, samplerate=16000)
-            print(f"{res}\n")
+            for k, v in res.items():
+                print(f"{k:>30}: {v:.3f}")
 
         sf.write(args.out_wav, estimate, 16000)
 
@@ -146,8 +147,7 @@ if __name__ == '__main__':
                 print(f"Sample ({c}/{len(files)})\t{filename}\t{res}")
 
             if args.output_dataset:
-                if not os.path.exists(args.output_dataset):
-                    os.mkdir(args.output_dataset)
+                os.makedirs(args.output_dataset, exist_ok=True)
                 filename = os.path.splitext(os.path.basename(filename))[0]
                 model_name = os.path.splitext(os.path.basename(args.trained_model))[0]
                 output_file = os.path.join(args.output_dataset, f"{filename}_{model_name}_onnx.wav")

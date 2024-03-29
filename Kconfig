@@ -57,6 +57,11 @@ menu "DENOISER APP menu"
             select CNN_SQ8
             select CNN_FP16
 
+        config BFP16
+            bool "BFP16"
+            select CNN_SQ8
+            select CNN_FP16
+
         config FP16MIXED
             bool "Mixed FP16-INT8"
             select CNN_SQ8

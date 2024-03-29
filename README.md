@@ -102,6 +102,40 @@ python nntool_scripts/test_onnx.py --mode test_dataset --trained_model model/den
 | tt_denoiser_rank_4.onnx      | LSTM TT R4  | DNS         | PESQ=       STOI=       | PESQ=2.2942 STOI=0.8831 | PESQ=2.2866 STOI=0.8831 | PESQ=2.1710 STOI=0.8915 | PESQ=2.2079 STOI=0.8904 |
 | tt_denoiser_rank_2.onnx      | LSTM TT R2  | DNS         | PESQ=       STOI=       | PESQ=2.3431 STOI=0.8822 | PESQ=2.3414 STOI=0.8796 | PESQ=2.2362 STOI=0.8874 | PESQ=2.2737 STOI=0.8864 |
 
+## Results on small Valentini Dataset:
+
+These results have been obtained with `bash_scripts/run_nntool_test.sh` for nntool and `bash_scripts/run_gvsoc_test.sh` for gvsoc. In gvsoc the application has been run in DenoiseWav mode.
+
+**denoiser_GRU_dns.onnx BFP16**
+|      filename |  NNTool PESQ  | GVSOC PESQ | NNTool STOI | GVSOC STOI |
+|---------------|:-------------:|:----------:|:-----------:|:----------:|
+|  p257_403.wav |     2.121222  |   2.048298 |    0.913772 |   0.930076 |
+|  p232_170.wav |     1.872853  |   1.837506 |    0.780692 |   0.765858 |
+|  p257_114.wav |     1.149774  |   1.174865 |    0.832479 |   0.833701 |
+|  p257_058.wav |     2.203916  |   2.138830 |    0.955514 |   0.952348 |
+|  p257_259.wav |     2.065216  |   2.035814 |    0.862383 |   0.843457 |
+|  p232_116.wav |     2.233573  |   2.245732 |    0.929711 |   0.925160 |
+|  p257_062.wav |     2.074991  |   1.844434 |    0.919069 |   0.901747 |
+|  p232_334.wav |     2.862745  |   2.719331 |    0.981879 |   0.982893 |
+|  p232_050.wav |     2.043524  |   2.057978 |    0.922732 |   0.919254 |
+|  p232_254.wav |     1.815302  |   1.970535 |    0.923826 |   0.923854 |
+|  **OVERALL**  |   **2.04**    |  **2.01**  |  **0.9022** | **0.8974** |
+
+**denoiser_GRU_dns.onnx FP16**
+|      filename |  NNTool PESQ  | GVSOC PESQ | NNTool STOI | GVSOC STOI |
+|---------------|:-------------:|:----------:|:-----------:|:----------:|
+|  p257_403.wav |     2.173632  |   2.076354 |    0.915731 |   0.935242 |
+|  p232_170.wav |     1.945011  |   1.952889 |    0.779314 |   0.770128 |
+|  p257_114.wav |     1.153799  |   1.175280 |    0.830670 |   0.831067 |
+|  p257_058.wav |     2.214221  |   2.202593 |    0.956876 |   0.953315 |
+|  p257_259.wav |     2.098329  |   2.067579 |    0.855297 |   0.835670 |
+|  p232_116.wav |     2.256996  |   2.220318 |    0.930446 |   0.925938 |
+|  p257_062.wav |     2.098467  |   2.025881 |    0.918559 |   0.913390 |
+|  p232_334.wav |     2.874148  |   2.697017 |    0.981922 |   0.980854 |
+|  p232_050.wav |     2.050680  |   2.016107 |    0.923126 |   0.925443 |
+|  p232_254.wav |     1.888132  |   2.077618 |    0.924739 |   0.924963 |
+|  **OVERALL**  |   **2.07**    |  **2.05**  |  **0.9017** | **0.8996** |
+
 ## Citing
 
 For more insights and on how the models were trained, refer to:

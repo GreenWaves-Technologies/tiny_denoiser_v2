@@ -63,3 +63,18 @@ def gather_results(row_list, noisy_row_list, csv_file=None, csv_file_allfiles=No
         df_mean.to_csv(csv_file, mode="a", index=False, header=False)
 
     return df_mean, df_noisy_mean
+
+def gather_results_only(row_list, csv_file=None, csv_file_allfiles=None):
+    import pandas as pd
+
+    df = pd.DataFrame(row_list, columns=["filename"] + TRACK_METRICS)
+    if csv_file_allfiles:
+        df.to_csv(csv_file_allfiles, index=False, encoding='utf-8')
+
+    df_mean = df[TRACK_METRICS].mean().to_frame().transpose()
+
+    if csv_file:
+        print(f"Writing summary results to {csv_file}")
+        df_mean.to_csv(csv_file, mode="a", index=False, header=False)
+
+    return df_mean

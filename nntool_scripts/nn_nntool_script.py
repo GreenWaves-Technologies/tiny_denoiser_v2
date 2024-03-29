@@ -22,7 +22,7 @@ def create_model_parser():
                         help="pickle file where to store the statistics or get statistics if already saved")
     parser.add_argument('--requantize', action="store_true",
                         help="even if the stats pickle file exists, requantize the NN anyway")
-    parser.add_argument('--quant_type', default="mixedfp16", choices=["mixedfp16", "mixedne16fp16", "fp16", "8x8_sq8", "8x8_ne16", "16x8_ne16"],
+    parser.add_argument('--quant_type', default="mixedfp16", choices=["mixedfp16", "mixedne16fp16", "fp16", "bfp16", "8x8_sq8", "8x8_ne16", "16x8_ne16"],
                         help="Quantization options")
     parser.add_argument('--tensor_train', action="store_true",
                         help="If the model is tensor train")
@@ -58,10 +58,10 @@ def build_nntool_graph(trained_model, quant_type, quant_dataset=None, stats_file
     G.adjust_order()
     G.fusions('scaled_match_group')
 
-    if quant_type == "fp16":
+    if quant_type in ["fp16", "bfp16"]:
         G.quantize(
             graph_options=quantization_options(
-                scheme="FLOAT", float_type="float16"
+                scheme="FLOAT", float_type="float16" if quant_type == "fp16" else "bfloat16"
             )
         )
     else:

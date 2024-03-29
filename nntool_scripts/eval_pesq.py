@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import argparse
-import os
 import argcomplete
 from denoiser_utils import open_wav
 
@@ -28,7 +27,8 @@ if __name__ == '__main__':
     if args.pesq_thr is None:
         from nntool_python_utils.audio_utils import compare_audio
         res = compare_audio(noisy_data, clean_data, samplerate=16000)
-        print(f"{res}\n")
+        for k, v in res.items():
+            print(f"{k:>30}: {v:.3f}")
     else:
         from pesq import pesq
         res = pesq(16000, clean_data, noisy_data, 'wb')
