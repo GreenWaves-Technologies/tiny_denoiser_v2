@@ -67,12 +67,12 @@ You can test the quality of the deployable models with python scripting:
 
 **NNTOOL**:
 ```
-python nntool_scripts/test_nntool_model.py --mode test_sample --trained_model model/denoiser_dns.onnx --quant_type fp16 --test_sample dataset/test/noisy/p232_050.wav --out_wav output_nntool.wav
+python nntool_scripts/test_nntool_model.py --mode test_sample --trained_model model/denoiser_GRU_dns.onnx --quant_type fp16 --test_sample dataset/test/noisy/p232_050.wav --out_wav output_nntool.wav
 ```
 
 **ONNX** (note that the models must be stateful to work on onnx):
 ```
-python nntool_scripts/test_onnx.py --mode test_sample --trained_model model/denoiser_dns.onnx --test_sample dataset/test/noisy/p232_050.wav --out_wav output_nntool.wav
+python nntool_scripts/test_onnx.py --mode test_sample --trained_model model/denoiser_GRU_dns.onnx --test_sample dataset/test/noisy/p232_050.wav --out_wav output_nntool.wav
 ```
 
 The output is saved in a file called `output_nntool.wav` in the home of the repository
@@ -81,12 +81,12 @@ The output is saved in a file called `output_nntool.wav` in the home of the repo
 
 **NNTOOL**:
 ```
-python nntool_scripts/test_nntool_model.py --mode test_dataset --trained_model model/denoiser_dns.onnx --quant_type fp16 --noisy_dataset dataset/test/noisy/ --clean_dataset dataset/test/clean/
+python nntool_scripts/test_nntool_model.py --mode test_dataset --trained_model model/denoiser_GRU_dns.onnx --quant_type fp16 --noisy_dataset dataset/test/noisy/ --clean_dataset dataset/test/clean/
 ```
 
 **ONNX** (note that the models must be stateful to work on onnx):
 ```
-python nntool_scripts/test_onnx.py --mode test_dataset --trained_model model/denoiser_dns.onnx --noisy_dataset dataset/test/noisy/ --clean_dataset dataset/test/clean/
+python nntool_scripts/test_onnx.py --mode test_dataset --trained_model model/denoiser_GRU_dns.onnx --noisy_dataset dataset/test/noisy/ --clean_dataset dataset/test/clean/
 ```
 
 
